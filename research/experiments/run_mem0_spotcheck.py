@@ -24,7 +24,7 @@ import run_experiment_v2 as V
 from run_provenance_ablation import belief_present  # reuse the exact cross-family presence judge
 
 _DIR = os.path.dirname(os.path.abspath(__file__))
-PERSONAS = json.load(open(os.path.join(_DIR, "..", "data", "benchmark_items.json")))["personas"]
+PERSONAS = json.load(open(os.path.join(_DIR, "..", "benchmark", "benchmark_items.json")))["personas"]
 
 # Same agent model as the main experiment. Mem0 also needs an embedder; we use a local
 # sentence-transformers model so the spot-check depends only on the Anthropic LLM.

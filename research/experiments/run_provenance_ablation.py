@@ -42,7 +42,7 @@ _DIR = os.path.dirname(os.path.abspath(__file__))
 # Personas + hand-authored, human-verifiable benchmark items loaded from benchmark_items.json
 # (author-set ground-truth labels; NEVER LLM-labeled). Each persona carries LISTS of items per type
 # (5 each) so n per condition = 10 personas x 5 items = 50 -> meaningful Wilson CIs.
-BENCHMARK_PATH = os.path.join(_DIR, "..", "data", "benchmark_items.json")
+BENCHMARK_PATH = os.path.join(_DIR, "..", "benchmark", "benchmark_items.json")
 PERSONAS = json.load(open(BENCHMARK_PATH))["personas"]
 
 CONSOLIDATE_EVERY = 10
