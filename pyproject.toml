@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sourced-memory"
-version = "0.1.0"
+version = "0.1.0a1"
 description = "Source-aware admission control for persistent agent memory."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -25,6 +25,9 @@ classifiers = [
 [project.optional-dependencies]
 anthropic = ["anthropic>=0.40"]
 openai = ["openai>=1.0"]
+# Reference adapter for the Mem0 open-source memory layer. Users can also
+# duck-type any Mem0-shaped client without installing mem0 itself.
+mem0 = ["mem0ai>=0.1"]
 # Deps to reproduce the paper's experiments in research/. Not required to use
 # the library. See research/README.md.
 research = ["anthropic>=0.40", "pydantic>=2.0", "matplotlib>=3.8", "numpy>=1.24"]
@@ -39,3 +42,8 @@ Issues = "https://github.com/utegenf/sourced-memory/issues"
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["sourced_memory*"]
+
+# Include the PEP 561 py.typed marker so downstream type-checkers pick up
+# our inline type hints without a separate stubs package.
+[tool.setuptools.package-data]
+sourced_memory = ["py.typed"]

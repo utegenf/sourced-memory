@@ -1,5 +1,6 @@
 """Source-aware admission control for persistent agent memory."""
 
+from .decider import Decider, DecisionRecord
 from .memory import SourceAwareMemory
 from .models import (
     AdmissionDecision,
@@ -10,21 +11,38 @@ from .models import (
     Source,
 )
 from .policy import SourceTypePolicy
+from .router import (
+    CallableRouter,
+    LLMRouter,
+    NullRouter,
+    RouteResult,
+    Router,
+    RuleBasedRouter,
+)
 
-# Temporary compatibility aliases while the v0 API is being stabilized.
+# Stable short aliases: sourced_memory.Memory / TrustPolicy are the names used
+# in the README quickstart and adapters. Not deprecated.
 Memory = SourceAwareMemory
 TrustPolicy = SourceTypePolicy
 
 __all__ = [
     "AdmissionDecision",
     "Belief",
+    "CallableRouter",
     "CandidateEvidence",
+    "Decider",
+    "DecisionRecord",
     "Experience",
     "FunctionalType",
+    "LLMRouter",
     "Memory",
+    "NullRouter",
+    "RouteResult",
+    "Router",
+    "RuleBasedRouter",
     "Source",
     "SourceAwareMemory",
     "SourceTypePolicy",
     "TrustPolicy",
 ]
-__version__ = "0.1.0"
+__version__ = "0.1.0a1"
