@@ -1,5 +1,6 @@
 """Source-aware admission control for persistent agent memory."""
 
+from .channel import Channel
 from .decider import Decider, DecisionRecord
 from .memory import SourceAwareMemory
 from .models import (
@@ -30,6 +31,7 @@ __all__ = [
     "Belief",
     "CallableRouter",
     "CandidateEvidence",
+    "Channel",
     "Decider",
     "DecisionRecord",
     "Experience",
@@ -45,4 +47,4 @@ __all__ = [
     "SourceTypePolicy",
     "TrustPolicy",
 ]
-__version__ = "0.1.0a1"
+__version__ = "0.1.0a2"

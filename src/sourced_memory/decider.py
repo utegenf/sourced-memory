@@ -26,6 +26,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from .channel import Channel
 from .models import AdmissionDecision, FunctionalType, Source
 from .policy import SourceTypePolicy
 from .router import Router, RuleBasedRouter
@@ -65,23 +66,47 @@ class Decider:
         self.router = router if router is not None else RuleBasedRouter()
         self._trusted_sources = set(trusted_sources or {"user"})
 
+    def channel(
+        self,
+        name: str,
+        *,
+        trusted: bool | None = None,
+        source_id: str | None = None,
+    ) -> Channel:
+        """Create a :class:`Channel` bound to this Decider.
+
+        If ``trusted`` is omitted, it defaults to whether ``name`` is in the
+        Decider's ``trusted_sources``. Prefer explicit ``trusted=`` in new code.
+        """
+        if trusted is None:
+            trusted = name in self._trusted_sources
+        return Channel(name=name, trusted=trusted, source_id=source_id, _target=self)
+
     def decide(
         self,
         content: str,
         *,
-        source: str,
+        source: "str | Channel",
         source_id: str | None = None,
         trusted: bool | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> DecisionRecord:
+        if isinstance(source, Channel):
+            source_name = source.name
+            if trusted is None:
+                trusted = source.trusted
+            if source_id is None:
+                source_id = source.source_id
+        else:
+            source_name = source
+            if trusted is None:
+                trusted = source_name in self._trusted_sources
         if not content or not content.strip():
             raise ValueError("content must be non-empty")
-        if not source:
+        if not source_name:
             raise ValueError("source must be non-empty")
-        if trusted is None:
-            trusted = source in self._trusted_sources
         src = Source(
-            name=source,
+            name=source_name,
             source_id=source_id,
             trusted=trusted,
             metadata=metadata or {},
@@ -100,3 +125,7 @@ class Decider:
             supported=route.supported,
             summarized_content=route.summarized_content or content,
         )
+
+    # Aliased method name so a Decider can stand in for any target Channel expects.
+    def observe(self, content: str, **kwargs: Any) -> DecisionRecord:
+        return self.decide(content, **kwargs)

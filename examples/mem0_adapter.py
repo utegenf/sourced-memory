@@ -1,8 +1,9 @@
-"""Sourced-memory in front of a Mem0-shaped memory store.
+"""Sourced-memory in front of a Mem0-shaped memory store, using channels.
 
 Runs offline with a MockLLM so you can inspect the behavior without an API
-key. Replace the two placeholder lines to run against a real Mem0 client and
-a real LLM.
+key. Replace ``MockMem0`` with ``mem0.Memory()`` and ``MockLLM`` with
+``AnthropicLLM(...)`` to run against real infrastructure. The channel
+configuration and the rest of the code do not change.
 """
 from sourced_memory import TrustPolicy
 from sourced_memory.adapters.mem0 import wrap_mem0
@@ -38,17 +39,21 @@ wrapped = wrap_mem0(
     trusted_sources={"user"},
 )
 
-# 1. Trusted user statement — becomes a belief in Mem0.
-wrapped.add("I love hiking.", user_id="alice", source="user")
+# One-time channel configuration: the application decides which sources it trusts.
+user     = wrapped.channel("user",              trusted=True)
+document = wrapped.channel("external_document", trusted=False)
 
-# 2. Untrusted document claiming a personal fact about the user — rejected.
-wrapped.add("The user hates flying.", user_id="alice", source="external_document")
+# 1. Trusted user statement -> belief in Mem0.
+user.observe("I love hiking.", user_id="alice")
 
-# 3. Untrusted world fact — held as candidate evidence, not written to Mem0.
-wrapped.add("Paris is the capital of France.", user_id="alice", source="external_document")
+# 2. Untrusted document claiming a personal fact about the user -> rejected.
+document.observe("The user hates flying.", user_id="alice")
 
-# 4. Trusted event — kept as episodic on the wrapper, not persisted.
-wrapped.add("Please remind me to call Alice.", user_id="alice", source="user")
+# 3. Untrusted world fact -> held as candidate evidence, not written to Mem0.
+document.observe("Paris is the capital of France.", user_id="alice")
+
+# 4. Trusted event -> kept as episodic on the wrapper, not persisted.
+user.observe("Please remind me to call Alice.", user_id="alice")
 
 print("Mem0 (persisted beliefs):")
 for row in mem0.store:

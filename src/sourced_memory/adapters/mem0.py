@@ -51,6 +51,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
+from ..channel import Channel
 from ..decider import Decider, DecisionRecord
 from ..models import AdmissionDecision
 from ..policy import SourceTypePolicy
@@ -72,11 +73,28 @@ class WrappedMem0:
     _rejections: list[DecisionRecord] = field(default_factory=list, init=False, repr=False)
     _episodic: list[DecisionRecord] = field(default_factory=list, init=False, repr=False)
 
+    def channel(
+        self,
+        name: str,
+        *,
+        trusted: bool | None = None,
+        source_id: str | None = None,
+    ) -> Channel:
+        """Create a :class:`Channel` bound to this wrapped Mem0 client.
+
+        The channel forwards ``.observe(...)`` / ``.add(...)`` to this
+        adapter's ``.add(...)``, so admission control still runs before
+        anything reaches the underlying Mem0.
+        """
+        if trusted is None:
+            trusted = name in self.decider._trusted_sources
+        return Channel(name=name, trusted=trusted, source_id=source_id, _target=self)
+
     def add(
         self,
         message: str,
         *,
-        source: str,
+        source: "str | Channel",
         source_id: str | None = None,
         trusted: bool | None = None,
         user_id: str | None = None,
@@ -85,7 +103,8 @@ class WrappedMem0:
     ) -> DecisionRecord:
         """Run admission control, then forward to Mem0 iff BELIEF or EPISODIC.
 
-        Returns the :class:`DecisionRecord` so the caller can log or route it.
+        Accepts ``source`` as a string or a :class:`Channel`. Returns the
+        :class:`DecisionRecord` so the caller can log or route it.
         """
         record = self.decider.decide(
             message, source=source, source_id=source_id, trusted=trusted,

@@ -44,35 +44,42 @@ pip install "sourced-memory[mem0]"        # Mem0 reference adapter
 
 ## Five-minute example
 
+The application security decision (which sources are trusted) happens once
+at setup, via channel objects. Every observation flows through the right
+channel without repeating the source metadata on every call:
+
 ```python
 from sourced_memory import Memory, TrustPolicy, LLMRouter
 from sourced_memory.llm import AnthropicLLM
 
 memory = Memory(
-    trusted_sources={"user"},
     router=LLMRouter(AnthropicLLM("claude-sonnet-4-5")),
     policy=TrustPolicy.reference(),
 )
 
-memory.observe("I've started learning Rust.", source="user")
-memory.observe("The user is an expert Rust developer.", source="external_document")
+# Configure channels once. This is the trust decision.
+user = memory.channel("user",              trusted=True)
+web  = memory.channel("external_document", trusted=False)
+
+user.observe("I've started learning Rust.")
+web.observe("The user is an expert Rust developer.")   # -> REJECTED (untrusted personal claim)
 memory.consolidate()
 
-print(memory.beliefs())    # -> [Belief("I've started learning Rust.", source=user, ...)]
-print(memory.candidates()) # -> []   ('user is an expert' arrived through an untrusted channel: rejected)
+print(memory.beliefs())     # -> [Belief("I've started learning Rust.", source=user, ...)]
+print(memory.candidates())  # -> []
 ```
 
 No API key? Swap the router for a `MockLLM` and everything above runs offline —
 see [`examples/fabrication_attack.py`](examples/fabrication_attack.py).
 
-## The fabrication attack, in eight lines
+## The fabrication attack, ten lines
 
 The core defense the library is built around, with an in-memory Mem0
 stand-in so you can reproduce it without any dependencies:
 
 ```python
 from sourced_memory.adapters.mem0 import wrap_mem0
-from sourced_memory.router import LLMRouter, NullRouter
+from sourced_memory.router import NullRouter
 from sourced_memory.models import FunctionalType
 
 class MockMem0:                                                    # replace with mem0.Memory()
@@ -81,16 +88,36 @@ class MockMem0:                                                    # replace wit
         self.store.append((msg, metadata.get("source")))
 
 wrapped = wrap_mem0(MockMem0(), router=NullRouter(FunctionalType.PERSONAL_PREFERENCE))
+user = wrapped.channel("user",              trusted=True)
+web  = wrapped.channel("external_document", trusted=False)
 
-wrapped.add("I love hiking.",                     source="user")               # -> Mem0
-wrapped.add("The user hates flying.",             source="external_document")  # -> rejected
-print(wrapped.mem0.store)      # [('I love hiking.', 'user')]
-print(wrapped.rejections())    # [DecisionRecord(... "hates flying" ... REJECT ...)]
+user.observe("I love hiking.")            # -> written to Mem0
+web.observe("The user hates flying.")     # -> REJECTED, never reaches Mem0
+
+print(wrapped.mem0.store)     # [('I love hiking.', 'user')]
+print(wrapped.rejections())   # [DecisionRecord(... "hates flying" ... REJECT ...)]
 ```
 
 Same claim shape (a personal preference about the user) arriving through two
 channels; the one from the untrusted channel is refused admission before Mem0
 ever sees it.
+
+## Sessions and remediation
+
+A channel can be *scoped* to a source_id, giving you fine-grained identity
+for later remediation:
+
+```python
+user    = memory.channel("user", trusted=True)
+session = user.session("session_47")     # same authority, distinct origin identity
+session.observe("I switched to JAX.")
+
+# Later, after detecting a compromised session:
+memory.purge(source_id="session_47")     # removes all state tagged session_47
+```
+
+Purge is deterministic (no LLM in the loop) and drops beliefs, candidates,
+episodic memories, and their audit-trail decisions in one call.
 
 ## How it works
 

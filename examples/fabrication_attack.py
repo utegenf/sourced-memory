@@ -1,6 +1,6 @@
 """The fabrication attack, before and after sourced-memory.
 
-Runs entirely offline with a MockLLM and a duck-typed Mem0 stand-in — no API
+Runs entirely offline with a MockLLM and a duck-typed Mem0 stand-in - no API
 keys, no network, no external dependencies. Replace ``MockMem0`` with
 ``mem0.Memory()`` and ``MockLLM`` with ``AnthropicLLM(...)`` to run against
 the real thing; the code around them does not change.
@@ -39,8 +39,8 @@ class MockMem0:
 
 
 def classify(system, user, schema, name):
-    """Deterministic classifier that always calls the item a personal
-    preference. In production this is an LLMRouter over a real Claude/GPT."""
+    """Deterministic classifier for the demo. In production this is an
+    LLMRouter over a real Claude or GPT."""
     return {
         "functional_type": "personal_preference",
         "confidence": 0.92,
@@ -58,8 +58,11 @@ def before():
 
 
 def after():
-    """sourced-memory in front of Mem0: only the trusted-source statement
-    is stored; the untrusted personal claim is rejected."""
+    """sourced-memory in front of Mem0, configured with channels.
+
+    Channels bind (name, trusted) once at setup; every observation flows
+    through the appropriate channel without repeating the source metadata.
+    """
     mem0 = MockMem0()
     wrapped = wrap_mem0(
         mem0,
@@ -67,9 +70,13 @@ def after():
         router=LLMRouter(MockLLM(classify)),
         trusted_sources={"user"},
     )
-    r1 = wrapped.add("I love hiking.", user_id="alice", source="user")
-    r2 = wrapped.add("The user hates flying.", user_id="alice",
-                     source="external_document")
+
+    # Configure channels once at setup. Application security decision lives here.
+    user = wrapped.channel("user",             trusted=True)
+    web  = wrapped.channel("external_document", trusted=False)
+
+    r1 = user.observe("I love hiking.",         user_id="alice")
+    r2 = web.observe("The user hates flying.",  user_id="alice")
     return mem0.store, wrapped.rejections(), (r1, r2)
 
 
@@ -93,8 +100,8 @@ def main():
         print(f"  rejected: {rec.content!r}  (source={rec.source.name}, "
               f"type={rec.functional_type.value})")
 
-    print(f"\n  Decision 1: {r1.decision.value.upper()}  ({r1.source.name})")
-    print(f"  Decision 2: {r2.decision.value.upper()}  ({r2.source.name})")
+    print(f"\n  Decision 1: {r1.decision.value.upper()}  (channel: user, trusted)")
+    print(f"  Decision 2: {r2.decision.value.upper()}  (channel: external_document, untrusted)")
 
 
 if __name__ == "__main__":
