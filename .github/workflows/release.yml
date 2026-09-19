@@ -1,0 +1,91 @@
+name: release
+
+# Publish sourced-memory to PyPI when a tag matching v* is pushed.
+#
+# Uses PyPI's Trusted Publishing (OIDC), so no long-lived API token is stored
+# in GitHub Secrets. The first time this runs the maintainer must add a
+# "pending publisher" on PyPI at https://pypi.org/manage/account/publishing/
+# with:
+#     PyPI Project Name: sourced-memory
+#     Owner:             utegenf
+#     Repository name:   sourced-memory
+#     Workflow name:     release.yml
+#     Environment name:  pypi
+#
+# See docs/publishing.md for the full checklist.
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+
+    # PyPI's trusted-publishing OIDC exchange requires the id-token permission.
+    # Everything else stays read-only.
+    permissions:
+      id-token: write
+      contents: read
+
+    environment:
+      name: pypi
+      url: https://pypi.org/p/sourced-memory
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install build tools
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install build
+
+      - name: Verify tag matches pyproject.toml version
+        # A mistagged push (e.g. tag says v0.1.0a3 but pyproject says 0.1.0a2)
+        # would publish the wrong wheel to PyPI. Fail loudly instead.
+        run: |
+          TAG="${GITHUB_REF#refs/tags/v}"
+          VER=$(python -c "import re, pathlib; \
+            print(re.search(r'^version = \"([^\"]+)\"', \
+              pathlib.Path('pyproject.toml').read_text(), re.M).group(1))")
+          echo "Tag version:       $TAG"
+          echo "pyproject version: $VER"
+          if [ "$TAG" != "$VER" ]; then
+            echo "::error::Tag ($TAG) does not match pyproject.toml version ($VER)"
+            exit 1
+          fi
+
+      - name: Install project + dev deps
+        run: python -m pip install -e ".[dev]"
+
+      - name: Run tests
+        run: pytest tests/ -q
+
+      - name: Build wheel + sdist
+        run: python -m build
+
+      - name: Verify wheel scope (no research/ or tests/ files)
+        run: |
+          python - <<'PY'
+          import glob, sys, zipfile
+          whl = glob.glob("dist/*.whl")[0]
+          names = zipfile.ZipFile(whl).namelist()
+          bad = [n for n in names if n.startswith(("research/", "tests/"))]
+          if bad:
+              print("Wheel contains files it should not:", bad)
+              sys.exit(1)
+          if not any(n.startswith("sourced_memory/") for n in names):
+              print("Wheel is missing the sourced_memory package")
+              sys.exit(1)
+          print(f"OK: wheel contains {len(names)} entries; scope is correct.")
+          PY
+
+      - name: Publish to PyPI via trusted publishing
+        uses: pypa/gh-action-pypi-publish@release/v1
+        # No `with:` block needed. Trusted publishing pulls credentials from
+        # the OIDC exchange configured on the "pypi" environment.
