@@ -32,9 +32,14 @@ logs/
 # Python
 __pycache__/
 *.py[cod]
+*.egg-info/
 .venv/
 venv/
 env/
+
+# Local editor / build backups
+*.bak
+*.pre-opus5.bak
 
 # Secrets — never commit
 .env

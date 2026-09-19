@@ -44,34 +44,47 @@ admission policy cannot.
 ## What we measure
 
 A **controlled ablation** (20 personas, 5 items per condition, `n=100` per cell,
-temperature 0, deterministic outcome inspection) holds episode content, persona, schema
+deterministic outcome inspection via `source_id`) holds episode content, persona, schema
 history, router, model, and consolidation fixed, and toggles only the source metadata
 attached to a single injected claim. Under identical input differing only in origin:
+
+Numbers below are from Claude Opus 5:
 
 | Injected item | source-blind | confidence-thresholded | source-aware |
 |---|---|---|---|
 | plausible-false personal claim, untrusted source | 100/100 trusted | 100/100 trusted | **0/100 trusted** |
-| genuine preference reversal, trusted source (want: learn) | 99/100 | 98/100 | **98/100** |
+| genuine preference reversal, trusted source (want: learn) | 100/100 | 100/100 | **100/100** |
+| genuine preference reversal, **untrusted** source (want: reject) | 100/100 trusted | 100/100 trusted | **0/100 trusted** |
 | true world fact, untrusted source (want: candidate) | 100/100 candidate | 100/100 candidate | **100/100 candidate** |
 
-The two reversal misses under `schema_prov` are dropped identically by
-`schema_conf` (which contains no provenance gate), tracing them to a Stage-1 content
-routing error, not the origin gate.
+The third row is the "truth is not authorization" check: even a *genuinely true*
+personal preference is admitted 100/100 by content-only memory when it arrives
+via the untrusted channel, and rejected 100/100 by source-aware memory.
 
-The pattern replicates on a second model family (Llama-4-Maverick) and on the
-off-the-shelf memory layer **Mem0**, which assimilates the fabrication in 50/50 cases.
+The pattern replicates on a second model family (Llama-4-Maverick, 99/100 vs
+0/100 on the AUTHORIZATION row) and on the off-the-shelf memory layer **Mem0**,
+which assimilates the plausible-false fabrication in 50/50 cases. The
+prior-release Sonnet-4.5 run reached 98/100 on the trusted-reversal row (the
+2/100 misses were Stage-1 content-routing errors, not provenance-gate rejects;
+they disappear on Opus 5).
 
-## Three epistemic states
+## Four admission destinations
 
-The policy admits a consolidated item to one of three destinations, held explicit:
+The policy admits a consolidated item to one of four destinations, held explicit:
 
 ```
-[ BELIEF ]     [ CANDIDATE EVIDENCE ]     [ REJECTED ]
+[ BELIEF ]   [ CANDIDATE EVIDENCE ]   [ EPISODIC ]   [ REJECTED ]
 ```
 
-An untrusted external observation is neither believed (that would let external noise
-act as a persistent prior) nor discarded (that would treat uncertainty as falsehood);
-it is held as candidate evidence, distinct in kind from a personal belief.
+- **Belief** — admitted as a persistent personal belief.
+- **Candidate evidence** — retained as evidence but not surfaced as a belief. An
+  untrusted external observation is neither believed (that would let external
+  noise act as a persistent prior) nor discarded (that would treat uncertainty
+  as falsehood).
+- **Episodic** — a transient one-off event; kept in episodic memory, not
+  consolidated into persistent belief.
+- **Rejected** — the admission decision is recorded (auditable) but nothing is
+  written to persistent state.
 
 ## What this is / isn't
 
@@ -114,7 +127,8 @@ A plausible fabrication that fits an agent's existing schema can be content-wise
 
 ## Research findings
 
-- **Controlled ablation** (20 personas, `n=100` per condition, deterministic outcome inspection): source-blind and confidence-thresholded memory assimilate the plausible fabrication in every case; a source-aware policy prevents it. Controls confirm the source-aware gate retains genuine trusted preference reversals in 98% of cases and routes untrusted world facts to a candidate/evidence layer.
+- **Controlled ablation** (20 personas, `n=100` per condition, deterministic outcome inspection; Claude Opus 5): source-blind and confidence-thresholded memory assimilate the plausible fabrication in every case; a source-aware policy prevents it. Controls confirm the source-aware gate retains genuine trusted preference reversals at 100/100 and routes untrusted world facts to a candidate/evidence layer.
+- **Truth-is-not-authorization:** delivering a *genuine* preference reversal through the untrusted channel is still trusted 100/100 by content-only memory and rejected 100/100 by source-aware memory, dissociating truth from authorization.
 - **Cross-family:** the same pattern replicates on a second base-model family (Llama-4-Maverick), indicating the failure is architectural rather than tied to one model family.
 - **External validity:** the repository includes a Mem0 spot-check as an external anchor; see the research results for the exact evaluated sample and protocol.
 
@@ -133,7 +147,7 @@ Source × Type Policy ──► belief / candidate / episodic / reject
 Backend
 ```
 
-- **Router:** pluggable. v0 provides an LLM router, a dependency-free rule router, and a null router for pre-typed inputs.
+- **Router:** pluggable via the `Router` protocol. v0 ships a dependency-free `RuleBasedRouter` and a `CallableRouter` for injecting any classifier callable; an `LLMRouter` and `NullRouter` are on the v0.1 roadmap.
 - **Policy:** configurable source × functional-type admission rules.
 - **Provenance:** application-supplied metadata; never inferred from message text.
 - **Backend:** in-memory in v0, with a `Backend` protocol for application-owned persistence.
@@ -178,11 +192,13 @@ tree exists so every number in the paper can be traced to a runnable script and
 a raw result file. See [`research/README.md`](research/README.md) for
 reproduction steps.
 
-All research runs use temperature 0 (greedy decoding); variation across `n=100`
-comes from personas and items, not sampling. The core schema-agent metric is
-deterministic (`source_id` inspection, no LLM in the loop); a cross-family
-judge is used only for paraphrase-robust presence checks on the summarization
-baseline.
+The schema-agent metric is deterministic by construction (`source_id`
+inspection, no LLM in the loop). Llama-4-Maverick and the prior-release
+Sonnet-4.5 arms use temperature 0 (greedy decoding); the Opus 5 main run uses
+`temperature=1.0` because Bedrock's Opus 5 endpoint rejects lower values as
+"deprecated for this model". Variation across `n=100` still comes from personas
+and items, not sampling. A cross-family judge is used only for paraphrase-robust
+presence checks on the summarization baseline.
 
 ## Citing
 

@@ -1,12 +1,19 @@
-"""Generate publication figures from the source-aware ablation (results/prov_ablation_sonnet45.json).
+"""Generate publication figures from the source-aware ablation.
 
 Deterministic: reads the saved result, writes PNGs. Re-run any time the ablation is re-run.
 Palette = Okabe-Ito (colorblind-safe categorical). Marks thin, direct labels, legend present,
 recessive axes. Three figures:
   fig_core_target.png    - headline: TARGET acceptance rate by agent + Wilson CI (the result)
-  fig_outcome_dist.png   - full trusted/candidate/absent composition, 4 conditions x 5 agents
+  fig_outcome_dist.png   - full trusted/candidate/absent composition, N conditions x 5 agents
   fig_pe_validation.png  - PE controlled-variable check vs authored ground truth
+
+Input JSON path is selected in this order:
+  1. --input CLI arg
+  2. FIGURES_INPUT env var
+  3. results/prov_ablation_opus5_v3.json (current release)
+  4. results/prov_ablation_sonnet45.json (fallback for the prior release)
 """
+import argparse
 import json
 import os
 
@@ -23,7 +30,24 @@ plt.rcParams.update({
 })
 
 _DIR = os.path.dirname(os.path.abspath(__file__))
-D = json.load(open(os.path.join(_DIR, "..", "results", "prov_ablation_sonnet45.json")))["result"]
+
+def _resolve_input():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--input", default=None, help="path to prov_ablation_*.json (result file)")
+    args, _ = ap.parse_known_args()
+    if args.input:
+        return args.input
+    if os.environ.get("FIGURES_INPUT"):
+        return os.environ["FIGURES_INPUT"]
+    for candidate in ("prov_ablation_opus5_v3.json", "prov_ablation_sonnet45.json"):
+        p = os.path.join(_DIR, "..", "results", candidate)
+        if os.path.exists(p):
+            return p
+    raise SystemExit("No result JSON found; pass --input or set FIGURES_INPUT")
+
+_INPUT = _resolve_input()
+print(f"[make_figures] reading {_INPUT}")
+D = json.load(open(_INPUT))["result"]
 S = D["summary"]
 PE = D["pe_validation"]
 
@@ -44,8 +68,11 @@ CONDS = {
     "plausible-false personal / UNTRUSTED (TARGET: reject)": "TARGET\nfalse-personal / untrusted\n(want: reject)",
     "plausible-false personal / trusted (irreducible: enters)": "IRREDUCIBLE\nfalse-personal / trusted\n(enters)",
     "TRUE reversal (personal) / trusted (CONTROL: enters=learning)": "CONTROL\ntrue reversal / trusted\n(want: enters)",
+    "TRUE reversal (personal) / UNTRUSTED (AUTHORIZATION: truth is not authorization)": "AUTHORIZATION\ntrue reversal / untrusted\n(want: reject)",
     "TRUE world-fact / UNTRUSTED (PARANOIA: candidate, not belief)": "PARANOIA\ntrue world-fact / untrusted\n(want: candidate)",
 }
+# Only draw a condition if it actually appears in the input; keeps figures working on prior-release JSONs.
+CONDS = {k: v for k, v in CONDS.items() if k in S}
 TARGET = "plausible-false personal / UNTRUSTED (TARGET: reject)"
 
 
