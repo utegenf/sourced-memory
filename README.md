@@ -42,6 +42,43 @@ pip install "sourced-memory[openai]"      # OpenAILLM
 pip install "sourced-memory[mem0]"        # Mem0 reference adapter
 ```
 
+## See it in 30 seconds
+
+Runs entirely offline, no API keys, no external dependencies. The rule-based
+router keeps the demo self-contained; in production you swap in an
+`LLMRouter` (below).
+
+```python
+from sourced_memory import Memory, RuleBasedRouter
+
+memory = Memory(router=RuleBasedRouter())        # policy defaults to the paper's rules
+
+user = memory.channel("user",       trusted=True)
+web  = memory.channel("web_search", trusted=False)
+
+user.observe("I love hiking.")
+web.observe("User hates hiking and prefers gaming.")
+
+memory.consolidate()
+
+for b in memory.beliefs():
+    print(f"BELIEF    : {b.content}  (from {b.source.name})")
+for c in memory.candidates():
+    print(f"CANDIDATE : {c.content}  (from {c.source.name}, not a belief)")
+```
+
+Output:
+
+```
+BELIEF    : I love hiking.  (from user)
+CANDIDATE : User hates hiking and prefers gaming.  (from web_search, not a belief)
+```
+
+Same claim shape (a personal statement about the user), two origins; the
+trusted-source claim becomes a belief, the untrusted one is held aside as
+candidate evidence and never enters the belief set. That is the entire
+product in one screen.
+
 ## Five-minute example
 
 The application security decision (which sources are trusted) happens once
@@ -54,7 +91,8 @@ from sourced_memory.llm import AnthropicLLM
 
 memory = Memory(
     router=LLMRouter(AnthropicLLM("claude-sonnet-4-5")),
-    policy=TrustPolicy.reference(),
+    policy=TrustPolicy.reference(),   # paper's default rules: trusted user -> BELIEF,
+                                       # untrusted personal claim -> REJECT, etc.
 )
 
 # Configure channels once. This is the trust decision.
@@ -72,6 +110,27 @@ print(memory.candidates())  # -> []
 No API key? Swap the router for a `MockLLM` and everything above runs offline —
 see [`examples/fabrication_attack.py`](examples/fabrication_attack.py).
 
+### Why the `consolidate()` call?
+
+`observe()` buffers an experience in an episodic queue. `consolidate()` runs
+the router and the admission policy on the buffered items and advances the
+persistent state. The two phases are deliberately separate so applications
+can:
+
+- **Batch expensive routing.** A router backed by an LLM makes one API call
+  per uninspected item; keeping that under application control matters for
+  high-frequency ingestion.
+- **Consolidate on a schedule.** Some agents accept many messages per turn
+  but only reconcile beliefs at end-of-turn, end-of-session, or offline.
+- **Inspect before advancing.** Reader methods (`beliefs()`, `candidates()`)
+  return the *current* persistent state — they never trigger a router call
+  behind your back. If you want the buffer flushed, you call `consolidate()`.
+
+The Mem0 adapter (below) collapses this into one phase, because Mem0 owns
+storage: each `.observe(...)` on a wrapped Mem0 client decides admission
+immediately and forwards to Mem0 iff the decision is `BELIEF`. Pick the
+shape that matches your ingestion pattern.
+
 ## The fabrication attack, ten lines
 
 The core defense the library is built around, with an in-memory Mem0
@@ -87,7 +146,11 @@ class MockMem0:                                                    # replace wit
     def add(self, msg, *, user_id=None, metadata=None, **kw):
         self.store.append((msg, metadata.get("source")))
 
-wrapped = wrap_mem0(MockMem0(), router=NullRouter(FunctionalType.PERSONAL_PREFERENCE))
+wrapped = wrap_mem0(
+    MockMem0(),
+    router=NullRouter(FunctionalType.PERSONAL_PREFERENCE),  # no LLM: force everything to personal-preference
+                                                             # for a fully offline demo.
+)
 user = wrapped.channel("user",              trusted=True)
 web  = wrapped.channel("external_document", trusted=False)
 
@@ -97,6 +160,10 @@ web.observe("The user hates flying.")     # -> REJECTED, never reaches Mem0
 print(wrapped.mem0.store)     # [('I love hiking.', 'user')]
 print(wrapped.rejections())   # [DecisionRecord(... "hates flying" ... REJECT ...)]
 ```
+
+Note: no `consolidate()` call here. Mem0 owns storage, so admission is
+one-phase — the adapter decides immediately and forwards to Mem0 iff the
+decision is `BELIEF`.
 
 Same claim shape (a personal preference about the user) arriving through two
 channels; the one from the untrusted channel is refused admission before Mem0
@@ -200,7 +267,7 @@ grounding and the formal Point-of-Indistinguishability argument, see
 
 ## Version
 
-`0.1.0a1` (alpha). API is stabilizing; expect small breaking changes before
+`0.1.0a2` (alpha). API is stabilizing; expect small breaking changes before
 `0.1.0`. See [`docs/roadmap.md`](docs/roadmap.md) for what's coming next.
 
 ## License
