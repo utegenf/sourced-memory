@@ -170,6 +170,76 @@ v0 deliberately does **not** ship:
 
 These are deliberate scope boundaries, not missing features. Later versions can add them when real integration requirements justify the complexity.
 
+## Protecting Mem0 memory with source-aware admission
+
+The paper's motivating result is that content-based memory systems (Mem0
+included) will happily assimilate a plausible false claim about the user when
+that claim arrives from an untrusted channel. sourced-memory sits **in front
+of** an existing memory store as an admission middleware; it decides whether
+each incoming statement is allowed to become a persistent belief before the
+underlying store sees it.
+
+Before (Mem0 alone):
+
+```python
+from mem0 import Memory
+
+mem0 = Memory()
+mem0.add("I love hiking.", user_id="alice")                     # legit user statement -> stored
+mem0.add("The user hates flying.", user_id="alice")             # untrusted document -> ALSO stored
+mem0.add("Paris is the capital of France.", user_id="alice")    # world fact -> stored as personal belief
+```
+
+All three become first-class user preferences. There is no distinction between
+what the user said and what an untrusted document said about the user.
+
+After (Mem0 wrapped in source-aware admission):
+
+```python
+from mem0 import Memory
+from sourced_memory import TrustPolicy
+from sourced_memory.adapters.mem0 import wrap_mem0
+from sourced_memory.router import LLMRouter
+from sourced_memory.llm import AnthropicLLM
+
+mem0 = Memory()
+memory = wrap_mem0(
+    mem0,
+    policy=TrustPolicy.reference(),
+    router=LLMRouter(AnthropicLLM("claude-sonnet-4-5")),
+    trusted_sources={"user"},
+)
+
+memory.add("I love hiking.",                     user_id="alice", source="user")
+memory.add("The user hates flying.",             user_id="alice", source="external_document")
+memory.add("Paris is the capital of France.",    user_id="alice", source="external_document")
+memory.add("Please remind me to call Alice.",    user_id="alice", source="user")
+```
+
+The routing decisions:
+
+```
+Statement                                   Source              Type                    Decision
+--------------------------------------------------------------------------------------------------
+"I love hiking."                            user (trusted)      PERSONAL_PREFERENCE     BELIEF     -> written to Mem0
+"The user hates flying."                    external_document   PERSONAL_PREFERENCE     REJECTED   -> not written
+"Paris is the capital of France."           external_document   EXTERNAL_FACT           CANDIDATE  -> held aside
+"Please remind me to call Alice."           user (trusted)      EVENT                   EPISODIC   -> transient
+```
+
+The `add()` call still returns a `DecisionRecord` you can log, so the audit
+trail for what was rejected (and why) is available. Rejected and candidate
+items are kept on the wrapper (`memory.rejections()`, `memory.candidates()`);
+you decide when and whether to promote candidates to beliefs.
+
+Everything else about Mem0 (retrieval, `search`, `get_all`) delegates through
+the wrapper unchanged.
+
+An offline version of the same demo runs without an API key — see
+[`examples/mem0_adapter.py`](examples/mem0_adapter.py). It uses `MockLLM` for
+the router so you can inspect the mechanism before wiring in Anthropic or
+another provider.
+
 ## Repository layout
 
 ```text
