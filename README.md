@@ -267,9 +267,9 @@ grounding and the formal Point-of-Indistinguishability argument, see
 
 ## Version
 
-`0.1.0a2` (alpha). API is stabilizing; expect small breaking changes before
+`0.1.0a3` (alpha). API is stabilizing; expect small breaking changes before
 `0.1.0`. See [`docs/roadmap.md`](docs/roadmap.md) for what's coming next.
 
 ## License
 
-MIT.
+Apache License 2.0. See [`LICENSE`](LICENSE) and [`NOTICE`](NOTICE).

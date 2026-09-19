@@ -1,0 +1,6 @@
+sourced-memory
+Copyright 2026 Fatima Otegen
+
+This product implements the source-aware belief-updating mechanism described
+in "Content Interprets, Origin Decides: Source-Aware Belief Updating for
+Lifelong Agent Memory" (2026). See docs/research.md for details.
