@@ -159,20 +159,30 @@ These are deliberate scope boundaries, not missing features. Later versions can 
 ## Repository layout
 
 ```text
-src/sourced_memory/   reusable library
-src/research/        paper/reproducibility implementation (target layout)
-examples/             integration examples
-tests/                library and conformance tests
-data/                 hand-authored research benchmark
-results/              experiment outputs
-figures/              generated research figures
-docs/                 architecture and developer documentation
+src/sourced_memory/     the installable library (what `pip install sourced-memory` gives you)
+examples/               library usage examples
+tests/                  library tests
+docs/                   library architecture + protocol contracts
+
+research/               paper reproducibility artifact (not shipped in the wheel)
+├── experiments/        experiment scripts + LLM provider glue
+├── benchmark/          hand-authored personas + injected items
+├── results/            raw JSON outputs behind every number in the paper
+├── figures/            generated paper figures
+└── README.md           how to reproduce the paper
 ```
 
-All model calls use temperature 0 (greedy decoding); variation across `n=100` comes from personas
-and items, not sampling. The core schema-agent metric is deterministic (source-id inspection, no
-LLM in the loop); a cross-family judge is used only for paraphrase-robust presence checks on the
-summarization baseline.
+The library and the research code are intentionally separated: the library is
+usable on its own without pulling in the paper's dependencies, and the research
+tree exists so every number in the paper can be traced to a runnable script and
+a raw result file. See [`research/README.md`](research/README.md) for
+reproduction steps.
+
+All research runs use temperature 0 (greedy decoding); variation across `n=100`
+comes from personas and items, not sampling. The core schema-agent metric is
+deterministic (`source_id` inspection, no LLM in the loop); a cross-family
+judge is used only for paraphrase-robust presence checks on the summarization
+baseline.
 
 ## Citing
 

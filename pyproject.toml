@@ -25,6 +25,8 @@ classifiers = [
 [project.optional-dependencies]
 anthropic = ["anthropic>=0.40"]
 openai = ["openai>=1.0"]
+# Deps to reproduce the paper's experiments in research/. Not required to use
+# the library. See research/README.md.
 research = ["anthropic>=0.40", "pydantic>=2.0", "matplotlib>=3.8", "numpy>=1.24"]
 dev = ["pytest>=8.0", "build>=1.2"]
 
@@ -32,6 +34,8 @@ dev = ["pytest>=8.0", "build>=1.2"]
 Repository = "https://github.com/utegenf/sourced-memory"
 Issues = "https://github.com/utegenf/sourced-memory/issues"
 
+# Wheel contents come from src/sourced_memory only; the research/ tree is a
+# reproducibility artifact and is intentionally not shipped in the package.
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["sourced_memory*"]

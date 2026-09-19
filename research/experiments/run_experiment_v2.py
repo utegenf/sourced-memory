@@ -37,8 +37,8 @@ from model_client import complete_text, complete_structured, AGENT_MODEL, JUDGE_
 # CONFIG
 # =====================================================================
 _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-PERSONAS_PATH = os.path.join(_SCRIPT_DIR, "..", "data", "personas.json")
-ADVERSARIAL_PATH = os.path.join(_SCRIPT_DIR, "..", "data", "adversarial_suite.json")
+PERSONAS_PATH = os.path.join(_SCRIPT_DIR, "..", "benchmark", "personas.json")
+ADVERSARIAL_PATH = os.path.join(_SCRIPT_DIR, "..", "benchmark", "adversarial_suite.json")
 
 # Backward-compatible aliases (other modules import these as V.*).
 AGENT_MODEL_ID = AGENT_MODEL
