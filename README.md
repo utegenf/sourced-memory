@@ -90,44 +90,83 @@ it is held as candidate evidence, distinct in kind from a personal belief.
   source metadata. That is a real limitation; joint evaluation is future work
   (Louck 2026; Xu 2026; Cerruti 2026).
 
+memory.observe(
+    "I've started learning Rust.",
+    source="user",
+)
+
+memory.observe(
+    "The user is an expert Rust developer.",
+    source="external_document",
+)
+
+memory.consolidate()
+
+print(memory.beliefs())
+print(memory.candidates())
+```
+
+Consolidation is explicit. Provenance is supplied by the application and is never inferred from content. The core package does not require an LLM provider.
+
+## The idea
+
+A plausible fabrication that fits an agent's existing schema can be content-wise indistinguishable from a genuine personal update. We call this the **Point of Indistinguishability**. Content determines the interpretation of an experience; origin determines whether that experience is allowed to change beliefs.
+
+## Research findings
+
+- **Controlled ablation** (20 personas, `n=100` per condition, deterministic outcome inspection): source-blind and confidence-thresholded memory assimilate the plausible fabrication in every case; a source-aware policy prevents it. Controls confirm the source-aware gate retains genuine trusted preference reversals in 98% of cases and routes untrusted world facts to a candidate/evidence layer.
+- **Cross-family:** the same pattern replicates on a second base-model family (Llama-4-Maverick), indicating the failure is architectural rather than tied to one model family.
+- **External validity:** the repository includes a Mem0 spot-check as an external anchor; see the research results for the exact evaluated sample and protocol.
+
+## Architecture
+
+```text
+experience
+    │
+    ▼
+Content Router ──► functional type
+    │
+    ▼
+Source × Type Policy ──► belief / candidate / episodic / reject
+    │
+    ▼
+Backend
+```
+
+- **Router:** pluggable. v0 provides an LLM router, a dependency-free rule router, and a null router for pre-typed inputs.
+- **Policy:** configurable source × functional-type admission rules.
+- **Provenance:** application-supplied metadata; never inferred from message text.
+- **Backend:** in-memory in v0, with a `Backend` protocol for application-owned persistence.
+- **Consolidation:** explicit and controllable; never triggered automatically by `observe()`.
+
+See [`docs/architecture.md`](docs/architecture.md) for the protocol contracts and design boundary.
+
+## v0 non-goals
+
+v0 deliberately does **not** ship:
+
+- SQLite or another built-in persistent storage implementation;
+- automatic corroboration or candidate-to-belief promotion;
+- learned multi-tier trust or source reputation;
+- a hosted memory service;
+- non-Python bindings;
+- automatic consolidation;
+- a mandatory LLM dependency;
+- framework-specific integrations as a requirement for the core package.
+
+These are deliberate scope boundaries, not missing features. Later versions can add them when real integration requirements justify the complexity.
+
 ## Repository layout
 
-```
-src/        experiment + figure code
-data/       hand-authored benchmark (personas, schema, injected items; author-set ground truth)
-results/    experiment outputs (JSON): the numbers behind the findings
-figures/    generated figures (mechanism diagram, Point of Indistinguishability, result plots)
-```
-
-### `src/`
-| file | purpose |
-|---|---|
-| `model_client.py` | provider-neutral LLM interface (`complete_text` / `complete_structured`); the only file with model-provider code |
-| `run_experiment_v2.py` | core: typed, provenanced belief store (`SleepAgent`) and the compared memory agents |
-| `run_provenance_ablation.py` | the source-aware ablation → `results/prov_ablation_sonnet45.json` (and `_llama4` for the cross-family run) |
-| `run_mem0_spotcheck.py` | external-validity anchor: identical target items through Mem0 |
-| `instrument_reversal.py` | traces why 2/50 reversals are dropped (a Stage-1 routing error) |
-| `make_figures.py` | result plots from `results/prov_ablation_sonnet45.json` |
-| `make_schematics.py` | concept diagrams (mechanism, Point of Indistinguishability) |
-
-## Running
-
-All model access is isolated in `src/model_client.py` (a provider-neutral `complete_text` /
-`complete_structured` interface). The reference implementation uses **Anthropic Claude** via the
-official `anthropic` SDK. Models are configured by name; the API key is read from the standard
-`ANTHROPIC_API_KEY` environment variable:
-
-```bash
-export ANTHROPIC_API_KEY=<your key>
-export AGENT_MODEL=claude-sonnet-4-5                      # agent
-export JUDGE_MODEL=<a different-family model>             # cross-family presence judge only
-
-pip install -r requirements.txt
-
-python3 src/run_provenance_ablation.py   # core ablation
-python3 src/run_mem0_spotcheck.py        # external anchor
-python3 src/make_figures.py              # result plots
-python3 src/make_schematics.py           # concept diagrams
+```text
+src/sourced_memory/   reusable library
+src/research/        paper/reproducibility implementation (target layout)
+examples/             integration examples
+tests/                library and conformance tests
+data/                 hand-authored research benchmark
+results/              experiment outputs
+figures/              generated research figures
+docs/                 architecture and developer documentation
 ```
 
 All model calls use temperature 0 (greedy decoding); variation across `n=100` comes from personas

@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sourced-memory"
+version = "0.1.0"
+description = "Source-aware admission control for persistent agent memory."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+authors = [{ name = "Fatima Otegen" }]
+keywords = ["agent-memory", "llm-agents", "provenance", "belief-updating", "memory-poisoning", "source-aware"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Science/Research",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence"
+]
+
+[project.optional-dependencies]
+anthropic = ["anthropic>=0.40"]
+openai = ["openai>=1.0"]
+research = ["anthropic>=0.40", "pydantic>=2.0", "matplotlib>=3.8", "numpy>=1.24"]
+dev = ["pytest>=8.0", "build>=1.2"]
+
+[project.urls]
+Repository = "https://github.com/utegenf/sourced-memory"
+Issues = "https://github.com/utegenf/sourced-memory/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["sourced_memory*"]

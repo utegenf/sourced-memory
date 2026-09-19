@@ -91,7 +91,7 @@ def main():
     print(f"\nMem0 TARGET acceptance (trusted): {n_trusted}/{n}"
           + (f"  [{len(errors)} errors]" if errors else ""))
     out = {"summary": {"n": n, "trusted": n_trusted, "errors": len(errors),
-                       "model": LLM_ARN, "embed": EMBED_ID},
+                       "model": LLM_MODEL, "embed": EMBED_MODEL},
            "rows": rows}
     path = os.path.join(_DIR, "..", "results", "mem0_spotcheck.json")
     json.dump(out, open(path, "w"), indent=2)
