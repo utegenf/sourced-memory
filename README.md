@@ -118,14 +118,25 @@ for a security library.
 ### 2. Route incoming inputs through the right channel
 
 ```python
-memory.user.add("I've started learning Rust.",         user_id="alice")
-memory.web.add("The user is an expert Rust developer.", user_id="alice")   # rejected
+memory.user.add("I love learning Rust.",                user_id="alice")   # belief
+memory.web.add("I love using Rust for everything.",     user_id="alice")   # rejected
 memory.document.add("Paris is the capital of France.",  user_id="alice")   # candidate
 ```
 
-Only the first line reaches Mem0. The second is refused admission before
-Mem0 sees it; the third is held as candidate evidence (untrusted world
-fact, not a personal belief). `add()` returns an `AuditEntry` you can log.
+Only the first line reaches Mem0. The second is a first-person personal
+preference from an untrusted channel (a scraped comment, say); the
+default `RuleBasedRouter` classifies it as `PERSONAL_PREFERENCE`, and
+the reference policy therefore refuses admission before Mem0 sees it.
+The third is a world fact from an untrusted source, so it lands in the
+candidate sidecar rather than as a personal belief. `add()` returns an
+`AuditEntry` you can log.
+
+The default `RuleBasedRouter` is keyword-only. It catches obvious
+first-person phrasing (`"I love"`, `"my"`, `"always"`, ...) but a phrase
+like `"The user is an expert Rust developer"` will fall through to
+`EXTERNAL_FACT` and route to `CANDIDATE`, not `REJECT`. For a router
+that understands third-person personal claims too, pass
+`router=LLMRouter(AnthropicLLM(...))`; see below.
 
 ### 3. Inspect what happened
 
@@ -154,8 +165,8 @@ SOURCED MEMORY  (/var/log/agent/audit.jsonl)
     document  1
 
   most recent 3 decisions:
-    ✓ BELIEF    "I've started learning Rust."             (user, ...)
-    ✗ REJECT    "The user is an expert Rust developer."   (web, ...)
+    ✓ BELIEF    "I love learning Rust."                   (user, ...)
+    ✗ REJECT    "I love using Rust for everything."       (web, ...)
     ? CANDIDATE "Paris is the capital of France."         (document, ...)
 ```
 
@@ -168,21 +179,38 @@ session = memory.user.session("session_47")   # same authority, scoped id
 session.add("I switched to JAX.")
 ```
 
-If you later discover session 47 was compromised, drop everything it
-wrote in one atomic call:
+If you later discover session 47 was compromised:
 
 ```python
-memory.purge(source_id="session_47")
+memory.purge(source_id="session_47")           # in-process
 ```
 
-...or from the shell:
+...or from the shell against the audit log:
 
 ```bash
 sourced-memory purge /var/log/agent/audit.jsonl --source session_47
 ```
 
-Purge is deterministic. No LLM in the loop. It drops beliefs, candidates,
-episodic records, and their audit-log entries in one pass.
+`purge()` is deterministic; no LLM in the loop. **What exactly it removes
+depends on the backend:**
+
+- **In-process backend** (`protect(store=None, ...)`): purge drops beliefs,
+  candidates, episodic records, decisions, and the JSONL audit-log
+  entries in one pass. Complete removal.
+- **Wrapped external store** (`protect(mem0_client, ...)`, and by extension
+  any other Mem0-shaped store): purge drops sourced-memory's audit log
+  and the candidate/episodic/rejection sidecars. It does **not** delete
+  records already forwarded to the underlying store; that path is
+  adapter-specific and is deliberately left to the caller. If Mem0 held
+  a belief that was written through the trusted channel and later needs
+  to be revoked, call the underlying Mem0's delete-by-metadata path
+  yourself (or filter by the `metadata.source` field the adapter attached
+  on write).
+
+Deleting from external stores is on the roadmap for adapter-specific
+support; see `docs/architecture.md`. For now, `purge()` gives you the
+audit trail and sidecar cleanup, and the underlying-store deletion is a
+one-liner in the calling code.
 
 ## What each destination means
 
