@@ -1,5 +1,10 @@
 # sourced-memory
 
+[![CI](https://github.com/utegenf/sourced-memory/actions/workflows/ci.yml/badge.svg)](https://github.com/utegenf/sourced-memory/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/sourced-memory.svg)](https://pypi.org/project/sourced-memory/)
+[![Python](https://img.shields.io/pypi/pyversions/sourced-memory.svg)](https://pypi.org/project/sourced-memory/)
+[![License](https://img.shields.io/pypi/l/sourced-memory.svg)](LICENSE)
+
 **Stop untrusted inputs from silently becoming beliefs in your agent's memory.**
 
 Modern LLM agents keep persistent memory (Mem0, Zep, Letta, your own store).
@@ -9,6 +14,10 @@ systems cannot tell whether a plausible personal statement came from the
 user or from a poisoned web page. `sourced-memory` sits in front of any
 memory store and decides which experiences are allowed to become persistent
 beliefs, based on both what the content is and where it came from.
+
+> **sourced-memory does not own durable storage.** It protects writes into
+> the application's existing memory system. Storage stays with whatever the
+> application uses (Mem0, Zep, custom DB, an in-process list).
 
 ```
               User          Tool output          Retrieved documents
@@ -40,7 +49,8 @@ beliefs, based on both what the content is and where it came from.
 pip install sourced-memory
 ```
 
-Optional extras:
+Optional extras (for production LLM routing, only needed if you want the
+`LLMRouter` instead of the built-in keyword router):
 
 ```bash
 pip install "sourced-memory[anthropic]"   # AnthropicLLM (direct API + Bedrock)
@@ -67,8 +77,6 @@ for entry in memory.audit():
     print(entry)
 ```
 
-Output:
-
 ```
 ✓ BELIEF    "I love hiking."                                (user, personal_preference from trusted source → belief)
 ? CANDIDATE "The user hates hiking and prefers gaming."     (web, external_fact from untrusted source → candidate)
@@ -77,43 +85,104 @@ Output:
 The web page's claim about the user never becomes a belief. Same claim
 shape, two origins; only the trusted-source one is admitted.
 
-## Two lines to add source-aware admission to Mem0
+For the full "user says X, web tries to poison, agent recalls clean state"
+story with a mock memory backend, run
+[`examples/poisoning_attack.py`](examples/poisoning_attack.py).
+A minimal LangGraph agent using the same pattern is in
+[`examples/langgraph_agent.py`](examples/langgraph_agent.py) (requires
+`pip install langgraph`).
+
+## The five-minute operator workflow
+
+The four things a developer using sourced-memory does, in order:
+
+### 1. `protect()` — configure trust once, at setup
 
 ```python
 from mem0 import Memory as Mem0Memory
 from sourced_memory import protect
 
+mem0 = Mem0Memory()
 memory = protect(
-    Mem0Memory(),
+    mem0,                                   # any Mem0-shaped .add(...) works
     trusted   = ["user"],
     untrusted = ["web", "tool", "document"],
+    audit_log_path = "/var/log/agent/audit.jsonl",   # optional; enables the CLI
 )
+```
 
-memory.user.add("I've started learning Rust.",              user_id="alice")
-memory.web.add("The user is an expert Rust developer.",      user_id="alice")    # rejected
-memory.document.add("Paris is the capital of France.",       user_id="alice")   # held as candidate
+Every channel you will use must be declared. `memory.slack.add(...)` where
+"slack" was not declared raises `UnknownChannelError`; loud beats silent
+for a security library.
+
+### 2. Route incoming inputs through the right channel
+
+```python
+memory.user.add("I've started learning Rust.",         user_id="alice")
+memory.web.add("The user is an expert Rust developer.", user_id="alice")   # rejected
+memory.document.add("Paris is the capital of France.",  user_id="alice")   # candidate
 ```
 
 Only the first line reaches Mem0. The second is refused admission before
 Mem0 sees it; the third is held as candidate evidence (untrusted world
-fact, not a personal belief). Any Mem0-shaped store (Zep, Letta, your own
-`.add(...)` object) works the same way.
+fact, not a personal belief). `add()` returns an `AuditEntry` you can log.
 
-## Sessions and remediation
+### 3. Inspect what happened
 
-Every observation can be scoped to an identity you can revoke later:
+Either in-process:
 
 ```python
-session = memory.user.session("session_47")   # same authority, scoped source_id
-session.add("I switched to JAX.")
-
-# ... later, if session 47 turns out to be compromised:
-found = memory.inspect(source_id="session_47")   # everything tagged with it
-removed = memory.purge(source_id="session_47")   # deterministic drop
+for entry in memory.audit():
+    print(entry)
 ```
 
-`purge()` is a pure filter; no LLM in the loop. It drops beliefs,
-candidates, episodic records, and their audit entries in one call.
+...or from a separate shell (the CLI reads the JSONL log directly, so it
+does not touch the running agent):
+
+```bash
+$ sourced-memory inspect /var/log/agent/audit.jsonl
+SOURCED MEMORY  (/var/log/agent/audit.jsonl)
+  total decisions : 3
+  belief    : 1
+  candidate : 1
+  episodic  : 0
+  rejected  : 1
+
+  decisions by source:
+    user      1
+    web       1
+    document  1
+
+  most recent 3 decisions:
+    ✓ BELIEF    "I've started learning Rust."             (user, ...)
+    ✗ REJECT    "The user is an expert Rust developer."   (web, ...)
+    ? CANDIDATE "Paris is the capital of France."         (document, ...)
+```
+
+### 4. Remediate on incident
+
+Every observation can be scoped to a source identity you can revoke later:
+
+```python
+session = memory.user.session("session_47")   # same authority, scoped id
+session.add("I switched to JAX.")
+```
+
+If you later discover session 47 was compromised, drop everything it
+wrote in one atomic call:
+
+```python
+memory.purge(source_id="session_47")
+```
+
+...or from the shell:
+
+```bash
+sourced-memory purge /var/log/agent/audit.jsonl --source session_47
+```
+
+Purge is deterministic. No LLM in the loop. It drops beliefs, candidates,
+episodic records, and their audit-log entries in one pass.
 
 ## What each destination means
 
@@ -125,20 +194,6 @@ Every admission produces exactly one of four outcomes:
 | `CANDIDATE`     | Untrusted evidence; retained in a sidecar but never surfaced as a belief.                      |
 | `EPISODIC`      | Transient one-off (an event, a request); not consolidated into belief.                         |
 | `REJECT`        | Never written; the decision is recorded in the audit log for review.                           |
-
-## Undeclared channels are an error, not a default
-
-Access to a channel that was not declared in `protect(...)` raises
-`UnknownChannelError`:
-
-```python
-memory = protect(trusted=["user"], untrusted=["web"])
-memory.slack.add("...")     # -> UnknownChannelError
-```
-
-Loud beats silent for a security library; the caller must declare every
-source it will use. Downgrading an unknown source to "untrusted" would be
-convenient and dangerous.
 
 ## Swap the router, swap the policy
 
@@ -176,9 +231,6 @@ from sourced_memory.advanced import (
 )
 ```
 
-The primary API (`protect`, `AuditEntry`, `UnknownChannelError`, plus
-`Router`, `LLMRouter`, `TrustPolicy`, etc.) stays at the top level.
-
 ## What this is not
 
 - **Not a memory system.** No storage, no embeddings, no retrieval, no
@@ -193,17 +245,9 @@ The primary API (`protect`, `AuditEntry`, `UnknownChannelError`, plus
 - **Not automatic.** Provenance is supplied by the application; the
   library never infers "who said this?" from message text.
 
-## Design boundaries (v0.1)
-
-- No persistence in core; bring your own store.
-- No corroboration/promotion (candidate → belief promotion is planned for
-  a later release).
-- No hosted service.
-- No mandatory LLM dependency.
-
 ## Version
 
-`0.1.0a4` (alpha). API stabilizing; small breaking changes remain possible
+`0.1.0a5` (alpha). API stabilizing; small breaking changes remain possible
 before `0.1.0`.
 
 ## Research
