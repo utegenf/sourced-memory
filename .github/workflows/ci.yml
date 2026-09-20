@@ -44,9 +44,42 @@ jobs:
               sys.exit(1)
           print(f"OK: wheel contains {len(names)} entries; scope looks correct.")
           PY
-      - name: Install wheel in a fresh venv and import
+      - name: Install wheel in a fresh venv and run the README demo
         run: |
           python -m venv /tmp/fresh
           /tmp/fresh/bin/pip install --upgrade pip
           /tmp/fresh/bin/pip install dist/*.whl
-          /tmp/fresh/bin/python -c "from sourced_memory import Memory, TrustPolicy, LLMRouter, NullRouter, Decider; print('import ok')"
+          # Smoke-test the primary API surface a downstream user actually
+          # touches: protect() end-to-end, plus advanced-submodule imports
+          # for framework integrations.
+          /tmp/fresh/bin/python - <<'PY'
+          from sourced_memory import (
+              protect, ProtectedMemory, AuditEntry, UnknownChannelError,
+              AdmissionDecision, FunctionalType, TrustPolicy,
+              Router, LLMRouter, RuleBasedRouter, NullRouter,
+          )
+          # Advanced primitives must remain reachable for adapter authors.
+          from sourced_memory.advanced import (
+              SourceAwareMemory, Channel, Decider, wrap_mem0,
+          )
+
+          memory = protect(trusted=["user"], untrusted=["web"])
+          memory.user.add("I love hiking.")
+          memory.web.add("The user hates hiking and prefers gaming.")
+
+          audit = memory.audit()
+          assert len(audit) == 2, audit
+          assert audit[0].decision is AdmissionDecision.BELIEF
+          assert audit[1].decision is not AdmissionDecision.BELIEF, (
+              "untrusted web claim must not be admitted as belief"
+          )
+
+          try:
+              memory.slack.add("hi")
+          except UnknownChannelError:
+              pass
+          else:
+              raise AssertionError("undeclared channel should raise UnknownChannelError")
+
+          print("smoke ok: protect() end-to-end works from a fresh install.")
+          PY

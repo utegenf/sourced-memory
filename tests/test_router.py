@@ -1,7 +1,7 @@
 import inspect
 import typing
 
-from sourced_memory import SourceAwareMemory
+from sourced_memory.advanced import SourceAwareMemory
 from sourced_memory.models import FunctionalType
 from sourced_memory.router import CallableRouter, Router, RouteResult
 

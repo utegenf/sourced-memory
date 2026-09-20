@@ -1,5 +1,6 @@
 """Tests for the LLM-backed router and the MockLLM stub."""
-from sourced_memory import LLMRouter, NullRouter, SourceAwareMemory
+from sourced_memory import LLMRouter, NullRouter
+from sourced_memory.advanced import SourceAwareMemory
 from sourced_memory.llm import LLMResponseError, MockLLM
 from sourced_memory.models import FunctionalType
 

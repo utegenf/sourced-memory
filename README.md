@@ -1,31 +1,37 @@
 # sourced-memory
 
-**Prevent untrusted experiences from silently becoming beliefs in your agent's memory.**
+**Stop untrusted inputs from silently becoming beliefs in your agent's memory.**
 
-`sourced-memory` is an admission-control middleware for LLM-agent memory. It
-sits in front of an existing memory system (Mem0, Zep, your own store) and
-decides whether each incoming statement is allowed to become a persistent
-belief, based on **both** its content type *and* the source it arrived from.
-The underlying storage system is not replaced.
-
-The mental model:
+Modern LLM agents keep persistent memory (Mem0, Zep, Letta, your own store).
+That memory is written to by anything the agent sees: user messages, tool
+outputs, retrieved documents, sub-agent replies. Content-only memory
+systems cannot tell whether a plausible personal statement came from the
+user or from a poisoned web page. `sourced-memory` sits in front of any
+memory store and decides which experiences are allowed to become persistent
+beliefs, based on both what the content is and where it came from.
 
 ```
-                    User / tool / documents
-                              │
-                              ▼
-                    ┌─────────────────────┐
-                    │  sourced-memory     │
-                    │                     │
-                    │  content router     │
-                    │        ↓            │
-                    │  authority policy   │
-                    │        ↓            │
-                    │  admission decision │
-                    └──────────┬──────────┘
-                               │
-                               ▼
-                    Existing memory system
+              User          Tool output          Retrieved documents
+                │                │                        │
+                └────────────────┼────────────────────────┘
+                                 ▼
+                     ┌────────────────────────┐
+                     │     sourced-memory     │
+                     │                        │
+                     │  content router        │
+                     │        ↓               │
+                     │  authority policy      │
+                     │        ↓               │
+                     │  admission decision    │
+                     └───────────┬────────────┘
+                                 │
+                       ┌─────────┼─────────┐
+                       ▼         ▼         ▼
+                    BELIEF   CANDIDATE   REJECT
+                       │
+                       ▼
+              Existing memory system
+              (Mem0, Zep, custom DB, ...)
 ```
 
 ## Install
@@ -39,236 +45,174 @@ Optional extras:
 ```bash
 pip install "sourced-memory[anthropic]"   # AnthropicLLM (direct API + Bedrock)
 pip install "sourced-memory[openai]"      # OpenAILLM
-pip install "sourced-memory[mem0]"        # Mem0 reference adapter
 ```
 
-## See it in 30 seconds
+## 30-second demo
 
-Runs entirely offline, no API keys, no external dependencies. The rule-based
-router keeps the demo self-contained; in production you swap in an
-`LLMRouter` (below).
+Fully offline. No API keys, no external memory, no LLM. Copy-paste into a
+Python REPL after `pip install sourced-memory`:
 
 ```python
-from sourced_memory import Memory, RuleBasedRouter
+from sourced_memory import protect
 
-memory = Memory(router=RuleBasedRouter())        # policy defaults to the paper's rules
+memory = protect(
+    trusted   = ["user"],
+    untrusted = ["web", "tool", "document"],
+)
 
-user = memory.channel("user",       trusted=True)
-web  = memory.channel("web_search", trusted=False)
+memory.user.add("I love hiking.")
+memory.web.add("The user hates hiking and prefers gaming.")
 
-user.observe("I love hiking.")
-web.observe("User hates hiking and prefers gaming.")
-
-memory.consolidate()
-
-for b in memory.beliefs():
-    print(f"BELIEF    : {b.content}  (from {b.source.name})")
-for c in memory.candidates():
-    print(f"CANDIDATE : {c.content}  (from {c.source.name}, not a belief)")
+for entry in memory.audit():
+    print(entry)
 ```
 
 Output:
 
 ```
-BELIEF    : I love hiking.  (from user)
-CANDIDATE : User hates hiking and prefers gaming.  (from web_search, not a belief)
+✓ BELIEF    "I love hiking."                                (user, personal_preference from trusted source → belief)
+? CANDIDATE "The user hates hiking and prefers gaming."     (web, external_fact from untrusted source → candidate)
 ```
 
-Same claim shape (a personal statement about the user), two origins; the
-trusted-source claim becomes a belief, the untrusted one is held aside as
-candidate evidence and never enters the belief set. That is the entire
-product in one screen.
+The web page's claim about the user never becomes a belief. Same claim
+shape, two origins; only the trusted-source one is admitted.
 
-## Five-minute example
-
-The application security decision (which sources are trusted) happens once
-at setup, via channel objects. Every observation flows through the right
-channel without repeating the source metadata on every call:
+## Two lines to add source-aware admission to Mem0
 
 ```python
-from sourced_memory import Memory, TrustPolicy, LLMRouter
-from sourced_memory.llm import AnthropicLLM
+from mem0 import Memory as Mem0Memory
+from sourced_memory import protect
 
-memory = Memory(
-    router=LLMRouter(AnthropicLLM("claude-sonnet-4-5")),
-    policy=TrustPolicy.reference(),   # paper's default rules: trusted user -> BELIEF,
-                                       # untrusted personal claim -> REJECT, etc.
+memory = protect(
+    Mem0Memory(),
+    trusted   = ["user"],
+    untrusted = ["web", "tool", "document"],
 )
 
-# Configure channels once. This is the trust decision.
-user = memory.channel("user",              trusted=True)
-web  = memory.channel("external_document", trusted=False)
-
-user.observe("I've started learning Rust.")
-web.observe("The user is an expert Rust developer.")   # -> REJECTED (untrusted personal claim)
-memory.consolidate()
-
-print(memory.beliefs())     # -> [Belief("I've started learning Rust.", source=user, ...)]
-print(memory.candidates())  # -> []
+memory.user.add("I've started learning Rust.",              user_id="alice")
+memory.web.add("The user is an expert Rust developer.",      user_id="alice")    # rejected
+memory.document.add("Paris is the capital of France.",       user_id="alice")   # held as candidate
 ```
 
-No API key? Swap the router for a `MockLLM` and everything above runs offline —
-see [`examples/fabrication_attack.py`](examples/fabrication_attack.py).
-
-### Why the `consolidate()` call?
-
-`observe()` buffers an experience in an episodic queue. `consolidate()` runs
-the router and the admission policy on the buffered items and advances the
-persistent state. The two phases are deliberately separate so applications
-can:
-
-- **Batch expensive routing.** A router backed by an LLM makes one API call
-  per uninspected item; keeping that under application control matters for
-  high-frequency ingestion.
-- **Consolidate on a schedule.** Some agents accept many messages per turn
-  but only reconcile beliefs at end-of-turn, end-of-session, or offline.
-- **Inspect before advancing.** Reader methods (`beliefs()`, `candidates()`)
-  return the *current* persistent state — they never trigger a router call
-  behind your back. If you want the buffer flushed, you call `consolidate()`.
-
-The Mem0 adapter (below) collapses this into one phase, because Mem0 owns
-storage: each `.observe(...)` on a wrapped Mem0 client decides admission
-immediately and forwards to Mem0 iff the decision is `BELIEF`. Pick the
-shape that matches your ingestion pattern.
-
-## The fabrication attack, ten lines
-
-The core defense the library is built around, with an in-memory Mem0
-stand-in so you can reproduce it without any dependencies:
-
-```python
-from sourced_memory.adapters.mem0 import wrap_mem0
-from sourced_memory.router import NullRouter
-from sourced_memory.models import FunctionalType
-
-class MockMem0:                                                    # replace with mem0.Memory()
-    def __init__(self): self.store = []
-    def add(self, msg, *, user_id=None, metadata=None, **kw):
-        self.store.append((msg, metadata.get("source")))
-
-wrapped = wrap_mem0(
-    MockMem0(),
-    router=NullRouter(FunctionalType.PERSONAL_PREFERENCE),  # no LLM: force everything to personal-preference
-                                                             # for a fully offline demo.
-)
-user = wrapped.channel("user",              trusted=True)
-web  = wrapped.channel("external_document", trusted=False)
-
-user.observe("I love hiking.")            # -> written to Mem0
-web.observe("The user hates flying.")     # -> REJECTED, never reaches Mem0
-
-print(wrapped.mem0.store)     # [('I love hiking.', 'user')]
-print(wrapped.rejections())   # [DecisionRecord(... "hates flying" ... REJECT ...)]
-```
-
-Note: no `consolidate()` call here. Mem0 owns storage, so admission is
-one-phase — the adapter decides immediately and forwards to Mem0 iff the
-decision is `BELIEF`.
-
-Same claim shape (a personal preference about the user) arriving through two
-channels; the one from the untrusted channel is refused admission before Mem0
-ever sees it.
+Only the first line reaches Mem0. The second is refused admission before
+Mem0 sees it; the third is held as candidate evidence (untrusted world
+fact, not a personal belief). Any Mem0-shaped store (Zep, Letta, your own
+`.add(...)` object) works the same way.
 
 ## Sessions and remediation
 
-A channel can be *scoped* to a source_id, giving you fine-grained identity
-for later remediation:
+Every observation can be scoped to an identity you can revoke later:
 
 ```python
-user    = memory.channel("user", trusted=True)
-session = user.session("session_47")     # same authority, distinct origin identity
-session.observe("I switched to JAX.")
+session = memory.user.session("session_47")   # same authority, scoped source_id
+session.add("I switched to JAX.")
 
-# Later, after detecting a compromised session:
-memory.purge(source_id="session_47")     # removes all state tagged session_47
+# ... later, if session 47 turns out to be compromised:
+found = memory.inspect(source_id="session_47")   # everything tagged with it
+removed = memory.purge(source_id="session_47")   # deterministic drop
 ```
 
-Purge is deterministic (no LLM in the loop) and drops beliefs, candidates,
-episodic memories, and their audit-trail decisions in one call.
+`purge()` is a pure filter; no LLM in the loop. It drops beliefs,
+candidates, episodic records, and their audit entries in one call.
 
-## How it works
+## What each destination means
 
-Every `.observe()` or `wrap_mem0(...).add(...)` passes through two stages:
+Every admission produces exactly one of four outcomes:
 
-1. **Content router** looks at the item text and classifies its *functional
-   type* (`PERSONAL_PREFERENCE`, `GENERAL_RULE`, `RELATIONAL_FACT`,
-   `EXTERNAL_FACT`, `EVENT`). It **never sees the source**.
-2. **Authority policy** takes the classified type together with the source
-   the application supplied, and decides one of four destinations:
+| Destination     | Meaning                                                                                        |
+|-----------------|------------------------------------------------------------------------------------------------|
+| `BELIEF`        | Admitted as a persistent personal belief; written to the backing store.                        |
+| `CANDIDATE`     | Untrusted evidence; retained in a sidecar but never surfaced as a belief.                      |
+| `EPISODIC`      | Transient one-off (an event, a request); not consolidated into belief.                         |
+| `REJECT`        | Never written; the decision is recorded in the audit log for review.                           |
 
-| Destination | Meaning |
-|---|---|
-| `BELIEF` | Admitted as a persistent personal belief. Written to the backing store. |
-| `CANDIDATE` | Untrusted evidence. Held in a sidecar so a corroboration protocol can later promote it. |
-| `EPISODIC` | A transient one-off (an event, a request). Not consolidated into belief. |
-| `REJECT` | Never written; the decision is recorded for audit. |
+## Undeclared channels are an error, not a default
 
-The policy is a plain configuration table. `TrustPolicy.reference()` implements
-the paper's `(source × functional-type)` rules; you can define your own.
+Access to a channel that was not declared in `protect(...)` raises
+`UnknownChannelError`:
 
-## Adapters
+```python
+memory = protect(trusted=["user"], untrusted=["web"])
+memory.slack.add("...")     # -> UnknownChannelError
+```
 
-| Adapter | Status | Purpose |
-|---|---|---|
-| `sourced_memory.adapters.mem0` | Shipping | Put admission control in front of any Mem0-shaped client. |
-| LangGraph | v0.2 (planned) | Wire admission control into a LangGraph memory node. |
-| Zep, Letta, Cognee | Later | Same pattern, one adapter each. Community PRs welcome. |
+Loud beats silent for a security library; the caller must declare every
+source it will use. Downgrading an unknown source to "untrusted" would be
+convenient and dangerous.
 
-Providers and routers you can swap in:
+## Swap the router, swap the policy
 
-| Kind | Class |
-|---|---|
-| LLM (core) | `MockLLM` — deterministic, no keys, no cost |
-| LLM (extras) | `AnthropicLLM`, `OpenAILLM` |
-| Router | `LLMRouter`, `RuleBasedRouter`, `NullRouter`, `CallableRouter` |
+`protect()` defaults to a dependency-free `RuleBasedRouter` (keyword
+classification) and the paper's reference `(source × functional-type)`
+policy. Both are overridable:
 
-## What this is *not*
+```python
+from sourced_memory import protect, TrustPolicy
+from sourced_memory.router import LLMRouter
+from sourced_memory.llm import AnthropicLLM
 
-- **Not a memory system.** No storage, no embeddings, no retrieval, no vector
-  DB, no graph. Bring your own; sourced-memory is the trust boundary in front
-  of it.
-- **Not a truth oracle.** A trusted source asserting a plausible lie is still
-  admitted; the library gates on origin, not veracity.
+memory = protect(
+    mem0_client,
+    trusted   = ["user"],
+    untrusted = ["web", "tool"],
+    router    = LLMRouter(AnthropicLLM("claude-sonnet-4-5")),
+    policy    = TrustPolicy.reference(),
+)
+```
+
+## Advanced: raw primitives
+
+Everything above is a thin facade over composable pieces. When you need
+finer control (custom adapters, framework integrations, runtime-dynamic
+channels, or the paper's exact two-phase model), the primitives live in
+`sourced_memory.advanced`:
+
+```python
+from sourced_memory.advanced import (
+    SourceAwareMemory,     # in-process, two-phase (observe / consolidate)
+    Channel,               # standalone channel object
+    Decider,               # storage-free decision function
+    wrap_mem0,             # Mem0 adapter directly
+)
+```
+
+The primary API (`protect`, `AuditEntry`, `UnknownChannelError`, plus
+`Router`, `LLMRouter`, `TrustPolicy`, etc.) stays at the top level.
+
+## What this is not
+
+- **Not a memory system.** No storage, no embeddings, no retrieval, no
+  vector DB. Bring your own; sourced-memory is the trust boundary in
+  front of it.
+- **Not a truth oracle.** A trusted source asserting a plausible lie is
+  still admitted; the library gates on origin, not veracity.
 - **Not a defense against upstream provenance laundering.** The library
-  assumes the source metadata the application supplies is authentic. That is
-  a real limitation — complementary to Louck 2026 / Xu 2026 / Cerruti 2026.
-- **Not automatic.** Provenance is supplied by the application; the library
-  never infers "who said this?" from message text.
+  assumes the source metadata the application supplies is authentic.
+  Complementary to work like Louck 2026 and Xu 2026 on non-malleable
+  origin binding.
+- **Not automatic.** Provenance is supplied by the application; the
+  library never infers "who said this?" from message text.
 
-## Design boundaries (v0)
+## Design boundaries (v0.1)
 
-- No persistence in core — bring your own store behind the `Backend` protocol
-  (or use the Mem0 adapter for a ready one).
-- No corroboration/promotion — candidate → belief promotion is v0.2+.
+- No persistence in core; bring your own store.
+- No corroboration/promotion (candidate → belief promotion is planned for
+  a later release).
 - No hosted service.
-- No mandatory LLM dependency; `MockLLM` covers tests.
-
-## Repository layout
-
-```
-src/sourced_memory/    the installable library
-├── llm/               provider-neutral LLM protocol + MockLLM/Anthropic/OpenAI
-├── adapters/          reference integrations (Mem0)
-└── ...
-
-examples/              runnable demos, offline where possible
-tests/                 library tests (28 passing on 3.10/3.11/3.12)
-docs/                  architecture, roadmap, and the research write-up
-research/              paper reproducibility artifact (not shipped in the wheel)
-```
-
-## Research
-
-The library implements the mechanism proposed in *Content Interprets, Origin
-Decides: Source-Aware Belief Updating for Lifelong Agent Memory*. The paper
-is not required reading to use the library, but if you want the empirical
-grounding and the formal Point-of-Indistinguishability argument, see
-[`docs/research.md`](docs/research.md) and [`research/README.md`](research/README.md).
+- No mandatory LLM dependency.
 
 ## Version
 
-`0.1.0a3` (alpha). API is stabilizing; expect small breaking changes before
-`0.1.0`. See [`docs/roadmap.md`](docs/roadmap.md) for what's coming next.
+`0.1.0a4` (alpha). API stabilizing; small breaking changes remain possible
+before `0.1.0`. See [`docs/roadmap.md`](docs/roadmap.md) for what's next.
+
+## Research
+
+The library implements the mechanism proposed in *Content Interprets,
+Origin Decides: Source-Aware Belief Updating for Lifelong Agent Memory*.
+The paper is not required reading to use the library; see
+[`docs/research.md`](docs/research.md) if you want the empirical grounding
+and the formal Point-of-Indistinguishability argument.
 
 ## License
 

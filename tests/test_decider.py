@@ -1,13 +1,6 @@
 """Tests for the Decider facade + Mem0 adapter."""
-from sourced_memory import (
-    AdmissionDecision,
-    Decider,
-    FunctionalType,
-    LLMRouter,
-    NullRouter,
-    TrustPolicy,
-)
-from sourced_memory.adapters.mem0 import wrap_mem0
+from sourced_memory import AdmissionDecision, FunctionalType, LLMRouter, NullRouter, TrustPolicy
+from sourced_memory.advanced import Decider, wrap_mem0
 from sourced_memory.llm import MockLLM
 
 

@@ -1,14 +1,6 @@
 """Tests for the Channel API + purge remediation."""
-from sourced_memory import (
-    AdmissionDecision,
-    Channel,
-    Decider,
-    FunctionalType,
-    LLMRouter,
-    NullRouter,
-    SourceAwareMemory,
-)
-from sourced_memory.adapters.mem0 import wrap_mem0
+from sourced_memory import AdmissionDecision, FunctionalType, LLMRouter, NullRouter
+from sourced_memory.advanced import Channel, Decider, SourceAwareMemory, wrap_mem0
 from sourced_memory.llm import MockLLM
 
 

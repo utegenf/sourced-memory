@@ -1,4 +1,4 @@
-from sourced_memory import SourceAwareMemory
+from sourced_memory.advanced import SourceAwareMemory
 
 def test_untrusted_personal_claim_does_not_become_belief():
     memory = SourceAwareMemory(trusted_sources={"user"})
