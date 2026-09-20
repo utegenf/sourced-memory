@@ -39,8 +39,10 @@ Design boundaries
 """
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any, Iterable
 
 from .adapters.mem0 import WrappedMem0, wrap_mem0
@@ -90,6 +92,45 @@ class AuditEntry:
         if not self.supported:
             return "router marked item unsupported"
         return f"{t} from {who} source → {d.value}"
+
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize to a plain dict (JSON-safe scalars only).
+
+        The mirror-image :meth:`from_dict` reads a dict produced by this
+        method back into an ``AuditEntry``; together they define the
+        canonical JSONL wire format used by the ``audit_log_path=`` sink
+        and the ``sourced-memory`` CLI.
+        """
+        return {
+            "content": self.content,
+            "source_name": self.source_name,
+            "source_id": self.source_id,
+            "trusted": self.trusted,
+            "functional_type": self.functional_type.value,
+            "decision": self.decision.value,
+            "confidence": self.confidence,
+            "supported": self.supported,
+            "timestamp": self.timestamp.isoformat(),
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "AuditEntry":
+        ts = data.get("timestamp")
+        if isinstance(ts, str):
+            ts = datetime.fromisoformat(ts)
+        elif ts is None:
+            ts = datetime.now(timezone.utc)
+        return cls(
+            content=data["content"],
+            source_name=data["source_name"],
+            source_id=data.get("source_id"),
+            trusted=bool(data["trusted"]),
+            functional_type=FunctionalType(data["functional_type"]),
+            decision=AdmissionDecision(data["decision"]),
+            confidence=float(data.get("confidence", 1.0)),
+            supported=bool(data.get("supported", True)),
+            timestamp=ts,
+        )
 
     def __str__(self) -> str:
         mark = _DECISION_MARKS.get(self.decision, "?")
@@ -168,6 +209,7 @@ class ProtectedMemory:
         untrusted: Iterable[str],
         router: Router,
         policy: TrustPolicy,
+        audit_log_path: str | Path | None = None,
     ):
         self._trusted_set = set(trusted)
         self._untrusted_set = set(untrusted)
@@ -180,6 +222,12 @@ class ProtectedMemory:
         self._audit_log: list[AuditEntry] = []
         self._router = router
         self._policy = policy
+        self._audit_log_path = Path(audit_log_path) if audit_log_path is not None else None
+        if self._audit_log_path is not None:
+            # Create the directory but not the file: an empty file is a
+            # legitimate audit state and should stay valid to `sourced-memory
+            # inspect` before any observations occur.
+            self._audit_log_path.parent.mkdir(parents=True, exist_ok=True)
 
         # Pick a backing implementation based on the store shape.
         if store is None:
@@ -278,6 +326,9 @@ class ProtectedMemory:
                 supported=record.supported,
             )
         self._audit_log.append(entry)
+        if self._audit_log_path is not None:
+            with self._audit_log_path.open("a", encoding="utf-8") as fh:
+                fh.write(json.dumps(entry.to_dict()) + "\n")
         return entry
 
     # ------------------------------------------------------------------
@@ -354,6 +405,13 @@ class ProtectedMemory:
         n = len(self._audit_log)
         self._audit_log = [e for e in self._audit_log if e.source_id != source_id]
         removed += n - len(self._audit_log)
+        # Rewrite the on-disk JSONL sink so a purge is durable, not just
+        # in-process. The file is created lazily by _observe, so it may not
+        # exist yet on an empty ProtectedMemory.
+        if self._audit_log_path is not None and self._audit_log_path.exists():
+            with self._audit_log_path.open("w", encoding="utf-8") as fh:
+                for entry in self._audit_log:
+                    fh.write(json.dumps(entry.to_dict()) + "\n")
         if self._mode == "in_process":
             removed += self._impl.purge(source_id=source_id)
         else:
@@ -380,6 +438,7 @@ def protect(
     untrusted: Iterable[str] | None = None,
     router: Router | None = None,
     policy: TrustPolicy | None = None,
+    audit_log_path: str | Path | None = None,
 ) -> ProtectedMemory:
     """Wrap a memory store with source-aware admission.
 
@@ -402,6 +461,11 @@ def protect(
     policy:
         Admission policy. Defaults to the paper's reference (source × type)
         rules.
+    audit_log_path:
+        Optional filesystem path. When set, every admission decision is
+        appended as one JSON line, and ``memory.purge(source_id=...)``
+        rewrites the file to drop matching entries. The ``sourced-memory``
+        CLI reads this format for ``inspect`` / ``decisions`` / ``purge``.
     """
     return ProtectedMemory(
         store=store,
@@ -409,4 +473,5 @@ def protect(
         untrusted=untrusted or [],
         router=router or RuleBasedRouter(),
         policy=policy or TrustPolicy.reference(),
+        audit_log_path=audit_log_path,
     )
