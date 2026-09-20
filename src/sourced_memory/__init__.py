@@ -40,7 +40,7 @@ from .models import (
 )
 
 # --- Extension points (keep these public: users override them) --------------
-from .policy import SourceTypePolicy
+from .policy import TrustPolicy
 from .router import (
     CallableRouter,
     LLMRouter,
@@ -49,9 +49,6 @@ from .router import (
     Router,
     RuleBasedRouter,
 )
-
-# Stable short aliases.
-TrustPolicy = SourceTypePolicy
 
 __all__ = [
     # Primary API
@@ -67,7 +64,6 @@ __all__ = [
     "FunctionalType",
     "Source",
     # Extension points
-    "SourceTypePolicy",
     "TrustPolicy",
     "Router",
     "RouteResult",

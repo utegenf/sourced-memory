@@ -47,7 +47,7 @@ from .adapters.mem0 import WrappedMem0, wrap_mem0
 from .decider import DecisionRecord
 from .memory import SourceAwareMemory
 from .models import AdmissionDecision, FunctionalType, Source
-from .policy import SourceTypePolicy
+from .policy import TrustPolicy
 from .router import Router, RuleBasedRouter
 
 
@@ -167,7 +167,7 @@ class ProtectedMemory:
         trusted: Iterable[str],
         untrusted: Iterable[str],
         router: Router,
-        policy: SourceTypePolicy,
+        policy: TrustPolicy,
     ):
         self._trusted_set = set(trusted)
         self._untrusted_set = set(untrusted)
@@ -379,7 +379,7 @@ def protect(
     trusted: Iterable[str] | None = None,
     untrusted: Iterable[str] | None = None,
     router: Router | None = None,
-    policy: SourceTypePolicy | None = None,
+    policy: TrustPolicy | None = None,
 ) -> ProtectedMemory:
     """Wrap a memory store with source-aware admission.
 
@@ -408,5 +408,5 @@ def protect(
         trusted=trusted or [],
         untrusted=untrusted or [],
         router=router or RuleBasedRouter(),
-        policy=policy or SourceTypePolicy.reference(),
+        policy=policy or TrustPolicy.reference(),
     )

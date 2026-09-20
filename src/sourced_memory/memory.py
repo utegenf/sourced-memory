@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from typing import Any
 from .channel import Channel
 from .models import AdmissionDecision, Belief, CandidateEvidence, Experience, FunctionalType, Source
-from .policy import SourceTypePolicy
+from .policy import TrustPolicy
 from .router import RouteResult, Router, RuleBasedRouter
 
 
@@ -34,7 +34,7 @@ class SourceAwareMemory:
         self,
         *,
         trusted_sources: Iterable[str] | None = None,
-        policy: SourceTypePolicy | None = None,
+        policy: TrustPolicy | None = None,
         router: Router | None = None,
     ):
         # trusted_sources and policy are orthogonal: policy is the (source,
@@ -42,7 +42,7 @@ class SourceAwareMemory:
         # names should carry ``Source.trusted=True`` by default. Both may be
         # supplied together.
         if policy is None:
-            policy = SourceTypePolicy.reference()
+            policy = TrustPolicy.reference()
         self.policy = policy
         self.router = router or RuleBasedRouter()
         self._trusted_sources = set(trusted_sources or {"user"})

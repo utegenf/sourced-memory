@@ -28,7 +28,7 @@ from typing import Any
 
 from .channel import Channel
 from .models import AdmissionDecision, FunctionalType, Source
-from .policy import SourceTypePolicy
+from .policy import TrustPolicy
 from .router import Router, RuleBasedRouter
 
 
@@ -55,14 +55,14 @@ class Decider:
     def __init__(
         self,
         *,
-        policy: SourceTypePolicy | None = None,
+        policy: TrustPolicy | None = None,
         router: Router | None = None,
         trusted_sources: set[str] | None = None,
     ):
         # ``policy`` is the (source, type) rule table. ``trusted_sources`` is a
         # shorthand for which source names should carry ``Source.trusted=True``.
         # They are orthogonal and both can be supplied.
-        self.policy = policy if policy is not None else SourceTypePolicy.reference()
+        self.policy = policy if policy is not None else TrustPolicy.reference()
         self.router = router if router is not None else RuleBasedRouter()
         self._trusted_sources = set(trusted_sources or {"user"})
 

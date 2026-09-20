@@ -12,7 +12,7 @@ def test_public_imports():
         CandidateEvidence,
         Experience,
         TrustPolicy,
-        SourceTypePolicy,
+        TrustPolicy,
         Router,
         RouteResult,
         LLMRouter,

@@ -54,7 +54,7 @@ from typing import Any
 from ..channel import Channel
 from ..decider import Decider, DecisionRecord
 from ..models import AdmissionDecision
-from ..policy import SourceTypePolicy
+from ..policy import TrustPolicy
 from ..router import Router
 
 
@@ -147,7 +147,7 @@ class WrappedMem0:
 def wrap_mem0(
     mem0_client: Any,
     *,
-    policy: SourceTypePolicy | None = None,
+    policy: TrustPolicy | None = None,
     router: Router | None = None,
     trusted_sources: set[str] | None = None,
 ) -> WrappedMem0:
@@ -159,8 +159,8 @@ def wrap_mem0(
         Any object exposing ``mem0.add(message, user_id=None, metadata=None, **kwargs)``.
         Both the ``mem0`` PyPI package's ``Memory`` and ``MemoryClient`` fit.
     policy:
-        A :class:`SourceTypePolicy` describing which (source, type) pairs may
-        become beliefs. Defaults to :meth:`SourceTypePolicy.reference`.
+        A :class:`TrustPolicy` describing which (source, type) pairs may
+        become beliefs. Defaults to :meth:`TrustPolicy.reference`.
     router:
         The content router. Defaults to :class:`RuleBasedRouter`; production
         callers should pass an :class:`LLMRouter` for accurate typing.

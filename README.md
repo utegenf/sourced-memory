@@ -204,7 +204,7 @@ The primary API (`protect`, `AuditEntry`, `UnknownChannelError`, plus
 ## Version
 
 `0.1.0a4` (alpha). API stabilizing; small breaking changes remain possible
-before `0.1.0`. See [`docs/roadmap.md`](docs/roadmap.md) for what's next.
+before `0.1.0`.
 
 ## Research
 

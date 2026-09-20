@@ -1,4 +1,4 @@
-"""Configurable source x functional-type admission policy."""
+"""Configurable (source × functional-type) admission policy."""
 from __future__ import annotations
 from collections.abc import Mapping
 from typing import Union
@@ -6,11 +6,26 @@ from .models import AdmissionDecision, FunctionalType, Source
 
 DecisionLike = Union[AdmissionDecision, str]
 
-class SourceTypePolicy:
-    """Deterministic, auditable policy for the source/type trust boundary."""
 
-    def __init__(self, rules: Mapping[tuple[str, str | FunctionalType], DecisionLike] | None = None,
-                 *, default: DecisionLike = AdmissionDecision.REJECT):
+class TrustPolicy:
+    """Deterministic, auditable policy for the source/type trust boundary.
+
+    Configuration is a mapping from ``(source_name, functional_type)`` to a
+    destination in ``{"belief", "candidate", "episodic", "reject"}``. Special
+    source names ``"*"``, ``"trusted"``, and ``"untrusted"`` provide wildcard
+    fallbacks; the reference policy uses these to express "any trusted
+    personal claim becomes a belief" without listing every trusted source.
+
+    Use :meth:`reference` to get the paper's default rules, or build your
+    own map at construction time.
+    """
+
+    def __init__(
+        self,
+        rules: Mapping[tuple[str, str | FunctionalType], DecisionLike] | None = None,
+        *,
+        default: DecisionLike = AdmissionDecision.REJECT,
+    ):
         self._rules = {
             (source_name, self._type_key(functional_type)): self._decision(decision)
             for (source_name, functional_type), decision in (rules or {}).items()
@@ -27,14 +42,24 @@ class SourceTypePolicy:
 
     def decide(self, source: Source, functional_type: FunctionalType) -> AdmissionDecision:
         key = functional_type.value
-        for candidate in ((source.name, key), ("*", key),
-                          ("trusted" if source.trusted else "untrusted", key)):
+        for candidate in (
+            (source.name, key),
+            ("*", key),
+            ("trusted" if source.trusted else "untrusted", key),
+        ):
             if candidate in self._rules:
                 return self._rules[candidate]
         return self.default
 
     @classmethod
-    def reference(cls) -> "SourceTypePolicy":
+    def reference(cls) -> "TrustPolicy":
+        """The paper's default rules.
+
+        - Personal claims (preference, rule, relational-fact) from a trusted
+          source become beliefs; from an untrusted source they are rejected.
+        - External facts, from any source, go to the candidate layer.
+        - Events, from any source, go to episodic memory.
+        """
         personal = (
             FunctionalType.PERSONAL_PREFERENCE.value,
             FunctionalType.GENERAL_RULE.value,
