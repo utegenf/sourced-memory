@@ -19,6 +19,36 @@ beliefs, based on both what the content is and where it came from.
 > the application's existing memory system. Storage stays with whatever the
 > application uses (Mem0, Zep, custom DB, an in-process list).
 
+### Bounded claims
+
+Read these before adopting. This is a security-adjacent library and the
+boundaries matter.
+
+- **Source metadata is application-supplied.** The library assumes the
+  `source=` label you attach to each observation is authentic. If an
+  attacker can spoof that field (compromised sub-agent labels itself as
+  `"user"`), the whole trust boundary collapses. The `source_validator=`
+  hook on `protect()` is where the caller plugs in its own source
+  authentication (session token, signature, network origin). Closing
+  the source-spoofing problem inside the library would require ambient
+  authentication (Louck 2026 "non-malleable origin binding") and is out
+  of scope for v0.
+- **Provenance does not compose across transformations.** The gate is
+  point-in-time. If an admitted CANDIDATE (untrusted, held aside) is
+  later paraphrased by the agent and re-ingested through the agent's
+  own trusted channel, the taint is lost and it can be re-admitted as
+  a BELIEF. Multi-turn laundering through summarization or agent
+  self-quotation is a real threat that a single-hop admission gate
+  cannot catch. Fixing it needs information-flow tracking (a belief
+  lineage that inherits the weakest link across derivations), which
+  is a research direction, not a v0 feature.
+- **The default router is keyword-based.** Without an LLM provider
+  installed, `protect()` falls back to `RuleBasedRouter` and emits a
+  `RoutingDegradedWarning`. Keyword routing catches the common
+  first-person and third-person patterns but does not match the paper's
+  validated behavior. For paper-quality coverage install an
+  `LLMRouter`. See "Swap the router" below.
+
 ```
               User          Tool output          Retrieved documents
                 │                │                        │
@@ -182,7 +212,8 @@ session.add("I switched to JAX.")
 If you later discover session 47 was compromised:
 
 ```python
-memory.purge(source_id="session_47")           # in-process
+result = memory.purge(source_id="session_47")
+print(result)
 ```
 
 ...or from the shell against the audit log:
@@ -191,26 +222,38 @@ memory.purge(source_id="session_47")           # in-process
 sourced-memory purge /var/log/agent/audit.jsonl --source session_47
 ```
 
-`purge()` is deterministic; no LLM in the loop. **What exactly it removes
-depends on the backend:**
+`purge()` returns a `PurgeResult` that names both what was removed AND
+what could not be verified. **A security tool's output must not let
+silence stand in for verification**, so the shape of `PurgeResult`
+distinguishes the two:
 
-- **In-process backend** (`protect(store=None, ...)`): purge drops beliefs,
-  candidates, episodic records, decisions, and the JSONL audit-log
-  entries in one pass. Complete removal.
-- **Wrapped external store** (`protect(mem0_client, ...)`, and by extension
-  any other Mem0-shaped store): purge drops sourced-memory's audit log
-  and the candidate/episodic/rejection sidecars. It does **not** delete
-  records already forwarded to the underlying store; that path is
-  adapter-specific and is deliberately left to the caller. If Mem0 held
-  a belief that was written through the trusted channel and later needs
-  to be revoked, call the underlying Mem0's delete-by-metadata path
-  yourself (or filter by the `metadata.source` field the adapter attached
-  on write).
+- `records_deleted_from_backing_store` — successfully deleted, verified.
+- `records_that_failed_backing_delete` — `(id, error)` pairs; retained
+  in the audit log for a retry on the next `purge()` call.
+- `records_unreachable_in_backing_store` — BELIEFs whose backing-store
+  id was never captured on write. This is a **gap**, not a success: the
+  record may still exist in the underlying store and sourced-memory has
+  no way to find it. Use the store's own tools to inspect.
+- `audit_entries_removed` and `audit_entries_retained_for_retry` — the
+  local half of the accounting.
 
-Deleting from external stores is on the roadmap for adapter-specific
-support; see `docs/architecture.md`. For now, `purge()` gives you the
-audit trail and sidecar cleanup, and the underlying-store deletion is a
-one-liner in the calling code.
+Backend behavior:
+
+- **In-process backend** (`protect(store=None, ...)`): complete removal;
+  beliefs, candidates, episodic, decisions, and JSONL audit entries all
+  drop. `records_unreachable_in_backing_store` is always zero.
+- **Wrapped external store** (`protect(mem0_client, ...)`): retry-safe
+  loop-delete. For each BELIEF the adapter tracked, `sourced-memory`
+  calls `store.delete(memory_id)`. Successes are removed from the audit
+  log; failures stay in the audit log so the next `purge()` can retry.
+  A permanent orphan (record in the store, no local trace) is impossible
+  as long as the id was captured at write time.
+
+**Not concurrency-safe.** Running `purge(source_id=X)` concurrently with
+an in-flight write for the same `source_id` can leave an orphan in the
+backing store that is invisible to future purges. Serialize purge
+against writes for a given `source_id`. A `purge_and_freeze` that
+closes this race by revoking the `source_id` first is on the roadmap.
 
 ## What each destination means
 
@@ -227,7 +270,19 @@ Every admission produces exactly one of four outcomes:
 
 `protect()` defaults to a dependency-free `RuleBasedRouter` (keyword
 classification) and the paper's reference `(source × functional-type)`
-policy. Both are overridable:
+policy. Both are overridable.
+
+Router tiers, ordered by attack coverage:
+
+| Router                       | LLM call | Latency         | Third-person "the user X" | Adversarial phrasing |
+|------------------------------|:--------:|-----------------|:-------------------------:|:--------------------:|
+| `RuleBasedRouter` (default)  | no       | microseconds    | catches common patterns   | weak                 |
+| `LLMRouter` (`[anthropic]`, `[openai]`) | 1 per unique content, cached  | ~500ms first call, free on hit | paper-quality  | best                 |
+
+`protect(router=None)` emits `RoutingDegradedWarning` at construction so
+the developer knows they are on the weaker default. `protect(router=RuleBasedRouter())`
+suppresses the warning (explicit informed choice) and emits a one-time
+INFO log naming the tradeoff. `protect(router=LLMRouter(...))` is silent.
 
 ```python
 from sourced_memory import protect, TrustPolicy
@@ -238,10 +293,34 @@ memory = protect(
     mem0_client,
     trusted   = ["user"],
     untrusted = ["web", "tool"],
-    router    = LLMRouter(AnthropicLLM("claude-sonnet-4-5")),
+    router    = LLMRouter(AnthropicLLM("claude-haiku-4-5-20251001")),
     policy    = TrustPolicy.reference(),
 )
 ```
+
+### `source_validator` (optional source-authentication hook)
+
+`protect()` accepts a `source_validator=callable` hook, called with
+`(channel_name, content, source_id)` before the router runs. Return
+`False` (or raise) to reject the observation before it costs a router
+call:
+
+```python
+def authenticate(channel_name, content, source_id):
+    if channel_name == "user" and not session_token_is_valid(source_id):
+        return False   # sourced-memory records REJECT with the reason
+    return True
+
+memory = protect(
+    mem0_client,
+    trusted=["user"], untrusted=["web"],
+    source_validator=authenticate,
+)
+```
+
+This is where an application plugs in its own source authentication.
+sourced-memory does not enforce source authenticity itself; the hook is
+the intended integration point for that responsibility.
 
 ## Advanced: raw primitives
 
@@ -275,7 +354,7 @@ from sourced_memory.advanced import (
 
 ## Version
 
-`0.1.0a5` (alpha). API stabilizing; small breaking changes remain possible
+`0.1.0a6` (alpha). API stabilizing; small breaking changes remain possible
 before `0.1.0`.
 
 ## Research

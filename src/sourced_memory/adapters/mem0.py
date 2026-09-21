@@ -58,6 +58,39 @@ from ..policy import TrustPolicy
 from ..router import Router
 
 
+def _extract_id_from_mem0_add(return_value: Any) -> str | None:
+    """Best-effort extraction of the memory id from mem0.add()'s return.
+
+    The mem0 open-source ``Memory.add`` returns a dict shaped like
+    ``{"results": [{"id": "...", "memory": "...", "event": "ADD"}]}``.
+    The hosted ``MemoryClient.add`` returns a list of similar dicts, or
+    sometimes a bare id string. Callers may also wrap mem0 in something
+    else. Cover the reasonable shapes; if we cannot recognize the shape,
+    fall back to ``None`` and record it in the audit log as
+    ``records_unreachable_in_backing_store`` on purge. Loud beats silent.
+    """
+    if return_value is None:
+        return None
+    if isinstance(return_value, str):
+        return return_value
+    if isinstance(return_value, dict):
+        results = return_value.get("results")
+        if isinstance(results, list) and results:
+            first = results[0]
+            if isinstance(first, dict) and isinstance(first.get("id"), str):
+                return first["id"]
+        rid = return_value.get("id")
+        if isinstance(rid, str):
+            return rid
+    if isinstance(return_value, list) and return_value:
+        first = return_value[0]
+        if isinstance(first, dict) and isinstance(first.get("id"), str):
+            return first["id"]
+        if isinstance(first, str):
+            return first
+    return None
+
+
 @dataclass
 class WrappedMem0:
     """A Mem0 client wrapped with source-aware admission control.
@@ -116,7 +149,13 @@ class WrappedMem0:
             meta = dict(metadata or {})
             meta.setdefault("source", record.source.name)
             meta.setdefault("functional_type", record.functional_type.value)
-            self.mem0.add(message, user_id=user_id, metadata=meta, **kwargs)
+            if record.source.source_id is not None:
+                meta.setdefault("source_id", record.source.source_id)
+            add_return = self.mem0.add(message, user_id=user_id, metadata=meta, **kwargs)
+            captured_id = _extract_id_from_mem0_add(add_return)
+            # DecisionRecord is frozen; use dataclasses.replace to attach the id.
+            import dataclasses
+            record = dataclasses.replace(record, backing_store_id=captured_id)
         elif record.decision is AdmissionDecision.EPISODIC:
             # Mem0 doesn't have a canonical episodic tier; keep it on the wrapper.
             self._episodic.append(record)

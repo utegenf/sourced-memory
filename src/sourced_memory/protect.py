@@ -40,10 +40,12 @@ Design boundaries
 from __future__ import annotations
 
 import json
+import logging
+import warnings
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any, Callable, Iterable, Optional
 
 from .adapters.mem0 import WrappedMem0, wrap_mem0
 from .decider import DecisionRecord
@@ -55,6 +57,141 @@ from .router import Router, RuleBasedRouter
 
 class UnknownChannelError(RuntimeError):
     """Raised when an undeclared channel is accessed on a ProtectedMemory."""
+
+
+@dataclass(frozen=True)
+class PurgeResult:
+    """Structured result of :meth:`ProtectedMemory.purge`.
+
+    The naming is deliberately explicit about what is a success and what
+    is a gap. In particular ``records_unreachable_in_backing_store`` means
+    "we could not verify these were removed from the backing store," not
+    "these were successfully cleaned up locally." A security tool's output
+    must not let silence or ambiguous naming stand in for verification.
+    """
+    records_deleted_from_backing_store: int
+    records_that_failed_backing_delete: list[tuple[str, str]]  # (id, error message)
+    records_unreachable_in_backing_store: int
+    audit_entries_removed: int
+    audit_entries_retained_for_retry: int
+
+    @property
+    def total_local_removed(self) -> int:
+        """Every audit entry that this purge removed from the local log."""
+        return self.audit_entries_removed
+
+    @property
+    def has_gaps(self) -> bool:
+        """True iff any records were left unverified or unremoved. When True,
+        the caller should NOT treat purge as complete."""
+        return (
+            bool(self.records_that_failed_backing_delete)
+            or self.records_unreachable_in_backing_store > 0
+        )
+
+    def __str__(self) -> str:
+        lines = [
+            f"purged from backing store   : {self.records_deleted_from_backing_store}",
+            f"audit entries removed        : {self.audit_entries_removed}",
+            f"audit entries retained (retry these on next purge) : "
+            f"{self.audit_entries_retained_for_retry}",
+        ]
+        if self.has_gaps:
+            lines.append("COULD NOT VERIFY REMOVAL:")
+            if self.records_unreachable_in_backing_store:
+                lines.append(
+                    f"  unreachable in backing store "
+                    f"(no id captured on write): "
+                    f"{self.records_unreachable_in_backing_store}"
+                )
+            if self.records_that_failed_backing_delete:
+                lines.append("  delete failed, will be retried on next purge:")
+                for bid, err in self.records_that_failed_backing_delete:
+                    lines.append(f"    - {bid}  ({err})")
+            lines.append("Some records may still exist in the backing store.")
+            lines.append("Re-run this purge after fixing the underlying issue.")
+            lines.append(
+                "Local-only records (unreachable) will not be retried "
+                "automatically; use the backing store's own tools to inspect "
+                "and clean them up."
+            )
+        return "\n".join(lines)
+
+
+class _PurgeAccumulator:
+    """Mutable helper used inside ``ProtectedMemory.purge`` to build a
+    :class:`PurgeResult`. Not part of the public API."""
+
+    def __init__(self) -> None:
+        self.records_deleted_from_backing_store = 0
+        self.records_that_failed_backing_delete: list[tuple[str, str]] = []
+        self.records_unreachable_in_backing_store = 0
+        self.audit_entries_removed = 0
+        self.audit_entries_retained_for_retry = 0
+
+    def build(self) -> PurgeResult:
+        return PurgeResult(
+            records_deleted_from_backing_store=self.records_deleted_from_backing_store,
+            records_that_failed_backing_delete=list(self.records_that_failed_backing_delete),
+            records_unreachable_in_backing_store=self.records_unreachable_in_backing_store,
+            audit_entries_removed=self.audit_entries_removed,
+            audit_entries_retained_for_retry=self.audit_entries_retained_for_retry,
+        )
+
+
+class RoutingDegradedWarning(UserWarning):
+    """Emitted at ``protect()`` construction when the router is weaker than
+    the paper-validated LLMRouter.
+
+    Fires on: ``protect(router=None)`` (silent default falls to
+    RuleBasedRouter). Does NOT fire on ``protect(router=LLMRouter(...))``
+    (paper-quality). ``protect(router=RuleBasedRouter())`` (explicit
+    informed choice) emits a one-time INFO log instead, not a warning.
+
+    The point: the security posture of the library is explicit at every
+    construction site. Nobody gets a hidden default.
+    """
+
+
+# Application-supplied hook to authenticate a claimed source before
+# admission runs. Returning False (or raising) short-circuits admission
+# to REJECT before the router is called. Signature: (channel_name, content,
+# source_id) -> bool.
+SourceValidator = Callable[[str, str, Optional[str]], bool]
+
+
+_logger = logging.getLogger("sourced_memory")
+# Guarded so the explicit-RuleBasedRouter INFO fires only once per Python
+# process lifetime. Long-running LangGraph agents see one line; serverless
+# containers see one line per invocation, which is the intended semantics.
+_explicit_rulerouter_notified = False
+
+
+def _notify_router_choice(router: Router, router_was_explicit: bool) -> None:
+    global _explicit_rulerouter_notified
+    if not router_was_explicit:
+        warnings.warn(
+            "sourced-memory: running with the default keyword-only "
+            "RuleBasedRouter, which misses third-person personal claims "
+            "like 'the user hates X' and does not match the paper's "
+            "validated behavior. To restore paper-quality routing:\n"
+            "  pip install 'sourced-memory[anthropic]'\n"
+            "  export ANTHROPIC_API_KEY=<key>\n"
+            "  memory = protect(..., router=LLMRouter(AnthropicLLM('claude-haiku-4-5-20251001')))\n"
+            "If keyword-only routing is intentional (offline demo, tests, "
+            "cost-sensitive deployment), pass router=RuleBasedRouter() "
+            "explicitly and this warning goes away.",
+            RoutingDegradedWarning,
+            stacklevel=3,
+        )
+        return
+    if isinstance(router, RuleBasedRouter) and not _explicit_rulerouter_notified:
+        _explicit_rulerouter_notified = True
+        _logger.info(
+            "sourced-memory: using RuleBasedRouter explicitly (keyword-only "
+            "routing). This misses third-person personal claims like "
+            "'the user hates X'. For paper-quality routing use LLMRouter."
+        )
 
 
 _DECISION_MARKS = {
@@ -82,10 +219,22 @@ class AuditEntry:
     confidence: float
     supported: bool
     timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    # Populated when a decision short-circuits the router (e.g. via a
+    # rejecting source_validator hook). ``reason`` returns this verbatim
+    # when it is set, so operators see the actual failure cause.
+    short_circuit_reason: str | None = None
+    # For BELIEF decisions written to a wrapped external store, the id the
+    # underlying store returned. None for in-process ProtectedMemory (which
+    # owns storage) and for BELIEFs where the underlying store's ``.add()``
+    # returned no recognizable id. Used by ``ProtectedMemory.purge`` to
+    # loop-delete the backing-store record.
+    backing_store_id: str | None = None
 
     @property
     def reason(self) -> str:
         """One-line human-readable explanation of the decision."""
+        if self.short_circuit_reason is not None:
+            return self.short_circuit_reason
         d = self.decision
         t = self.functional_type.value
         who = "trusted" if self.trusted else "untrusted"
@@ -111,6 +260,8 @@ class AuditEntry:
             "confidence": self.confidence,
             "supported": self.supported,
             "timestamp": self.timestamp.isoformat(),
+            "short_circuit_reason": self.short_circuit_reason,
+            "backing_store_id": self.backing_store_id,
         }
 
     @classmethod
@@ -130,6 +281,8 @@ class AuditEntry:
             confidence=float(data.get("confidence", 1.0)),
             supported=bool(data.get("supported", True)),
             timestamp=ts,
+            short_circuit_reason=data.get("short_circuit_reason"),
+            backing_store_id=data.get("backing_store_id"),
         )
 
     def __str__(self) -> str:
@@ -210,6 +363,7 @@ class ProtectedMemory:
         router: Router,
         policy: TrustPolicy,
         audit_log_path: str | Path | None = None,
+        source_validator: SourceValidator | None = None,
     ):
         self._trusted_set = set(trusted)
         self._untrusted_set = set(untrusted)
@@ -222,6 +376,7 @@ class ProtectedMemory:
         self._audit_log: list[AuditEntry] = []
         self._router = router
         self._policy = policy
+        self._source_validator = source_validator
         self._audit_log_path = Path(audit_log_path) if audit_log_path is not None else None
         if self._audit_log_path is not None:
             # Create the directory but not the file: an empty file is a
@@ -285,6 +440,25 @@ class ProtectedMemory:
         metadata: dict[str, Any] | None,
         extra: dict[str, Any],
     ) -> AuditEntry:
+        # source_validator: application-supplied hook. Runs BEFORE the router,
+        # so a rejection here saves the LLM call for cost/latency-sensitive
+        # deployments. A False return or a raised exception both short-circuit
+        # to REJECT; the reason surfaces in the audit log for operator review.
+        if self._source_validator is not None:
+            try:
+                allowed = self._source_validator(source, content, source_id)
+            except Exception as exc:
+                return self._record_short_circuit_reject(
+                    content=content, source=source, source_id=source_id,
+                    trusted=trusted,
+                    reason=f"source_validator raised {type(exc).__name__}: {exc}",
+                )
+            if not allowed:
+                return self._record_short_circuit_reject(
+                    content=content, source=source, source_id=source_id,
+                    trusted=trusted,
+                    reason="source_validator rejected",
+                )
         if self._mode == "in_process":
             experience = self._impl.observe(
                 content, source=source, source_id=source_id,
@@ -324,7 +498,34 @@ class ProtectedMemory:
                 decision=record.decision,
                 confidence=record.confidence,
                 supported=record.supported,
+                backing_store_id=record.backing_store_id,
             )
+        self._audit_log.append(entry)
+        if self._audit_log_path is not None:
+            with self._audit_log_path.open("a", encoding="utf-8") as fh:
+                fh.write(json.dumps(entry.to_dict()) + "\n")
+        return entry
+
+    def _record_short_circuit_reject(
+        self, *, content: str, source: str, source_id: str | None,
+        trusted: bool, reason: str,
+    ) -> AuditEntry:
+        """Emit a REJECT AuditEntry without invoking the router or the
+        underlying admission impl. Used by the source_validator short-circuit
+        so a rejecting validator saves the router call and the router's cost.
+        The reason string is preserved on the entry via metadata for audit UX.
+        """
+        entry = AuditEntry(
+            content=content,
+            source_name=source,
+            source_id=source_id,
+            trusted=trusted,
+            functional_type=FunctionalType.EXTERNAL_FACT,  # nominal; unused for REJECT
+            decision=AdmissionDecision.REJECT,
+            confidence=1.0,
+            supported=False,
+            short_circuit_reason=reason,
+        )
         self._audit_log.append(entry)
         if self._audit_log_path is not None:
             with self._audit_log_path.open("a", encoding="utf-8") as fh:
@@ -391,44 +592,94 @@ class ProtectedMemory:
                                if e.source.source_id == source_id]
         return out
 
-    def purge(self, *, source_id: str) -> int:
+    def purge(self, *, source_id: str) -> PurgeResult:
         """Remove every record tagged with ``source_id`` from this memory.
 
-        For an in-process ProtectedMemory this drops beliefs, candidates,
-        episodic records, experiences, and decisions in one call. For a
-        wrapped external store (Mem0, etc.) this drops the audit log entries
-        and the candidate / episodic sidecar; whether the underlying store
-        supports source-id-tagged deletion is store-specific and up to the
-        caller to arrange.
+        In-process ProtectedMemory: drops beliefs, candidates, episodic
+        records, experiences, and decisions in one call. Complete removal.
+
+        Wrapped external store (Mem0, etc.): iterates every audit entry
+        whose ``decision`` is BELIEF and whose ``backing_store_id`` is set,
+        calling ``store.delete(backing_store_id)`` on each. Successes are
+        removed from the audit log. **Failures are retained in the audit
+        log so a subsequent purge can retry them.** This means a permanent
+        orphan (backing-store record with no retry hook) is impossible as
+        long as the id was captured on write. Local-only entries (BELIEF
+        with backing_store_id=None) count under
+        ``records_unreachable_in_backing_store``: we cannot verify their
+        removal from the backing store.
+
+        Not concurrency-safe: running ``purge(source_id=X)`` concurrently
+        with an in-flight write for the same source_id can leave an orphan
+        in the backing store that is invisible to future purges. Callers
+        must serialize purge against writes for a given source_id. A
+        future ``purge_and_freeze`` will close this race by revoking the
+        source_id first, but is out of scope for 0.1.0.
         """
-        removed = 0
-        n = len(self._audit_log)
-        self._audit_log = [e for e in self._audit_log if e.source_id != source_id]
-        removed += n - len(self._audit_log)
-        # Rewrite the on-disk JSONL sink so a purge is durable, not just
-        # in-process. The file is created lazily by _observe, so it may not
-        # exist yet on an empty ProtectedMemory.
+        result = _PurgeAccumulator()
+
+        # In-process branch: sidecars are ours, everything is deterministic.
+        if self._mode == "in_process":
+            impl_removed = self._impl.purge(source_id=source_id)
+            n = len(self._audit_log)
+            self._audit_log = [e for e in self._audit_log if e.source_id != source_id]
+            result.audit_entries_removed = n - len(self._audit_log)
+            self._rewrite_audit_log_if_configured()
+            # Attribute impl_removed to the local counter; there is no
+            # backing store on this path.
+            result.audit_entries_removed = max(result.audit_entries_removed, impl_removed)
+            return result.build()
+
+        # Wrapped-store branch: retry-safe loop-delete against the backing store.
+        retained: list[AuditEntry] = []
+        for entry in self._audit_log:
+            if entry.source_id != source_id:
+                retained.append(entry)
+                continue
+            if entry.decision is not AdmissionDecision.BELIEF:
+                # Non-BELIEF decisions were never written to the backing store.
+                # Just drop the audit entry.
+                result.audit_entries_removed += 1
+                continue
+            if entry.backing_store_id is None:
+                # BELIEF, but we do not have an id to delete against. Drop
+                # the audit entry but count the gap under "unreachable".
+                result.records_unreachable_in_backing_store += 1
+                result.audit_entries_removed += 1
+                continue
+            # BELIEF with a captured id: try to delete from the backing store.
+            try:
+                self._impl.mem0.delete(entry.backing_store_id)
+            except Exception as e:
+                # Retain the audit entry so a later purge can retry.
+                retained.append(entry)
+                result.audit_entries_retained_for_retry += 1
+                result.records_that_failed_backing_delete.append(
+                    (entry.backing_store_id, f"{type(e).__name__}: {e}")
+                )
+                continue
+            result.records_deleted_from_backing_store += 1
+            result.audit_entries_removed += 1
+
+        self._audit_log = retained
+        self._rewrite_audit_log_if_configured()
+
+        # Sidecars on the wrapper: candidates / episodic / rejections. Purge
+        # unconditionally; they are ours, not the backing store's.
+        for attr in ("_candidates", "_episodic", "_rejections"):
+            bucket = getattr(self._impl, attr)
+            filtered = [r for r in bucket if r.source.source_id != source_id]
+            setattr(self._impl, attr, filtered)
+            # These do not add to the "unreachable" count; they were never
+            # written to the backing store to begin with.
+        return result.build()
+
+    def _rewrite_audit_log_if_configured(self) -> None:
+        """Rewrite the on-disk JSONL sink to match the in-memory audit log."""
         if self._audit_log_path is not None and self._audit_log_path.exists():
             with self._audit_log_path.open("w", encoding="utf-8") as fh:
                 for entry in self._audit_log:
                     fh.write(json.dumps(entry.to_dict()) + "\n")
-        if self._mode == "in_process":
-            removed += self._impl.purge(source_id=source_id)
-        else:
-            # Purge the wrapper's own sidecars.
-            n = len(self._impl._candidates)
-            self._impl._candidates = [c for c in self._impl._candidates
-                                      if c.source.source_id != source_id]
-            removed += n - len(self._impl._candidates)
-            n = len(self._impl._episodic)
-            self._impl._episodic = [e for e in self._impl._episodic
-                                    if e.source.source_id != source_id]
-            removed += n - len(self._impl._episodic)
-            n = len(self._impl._rejections)
-            self._impl._rejections = [r for r in self._impl._rejections
-                                      if r.source.source_id != source_id]
-            removed += n - len(self._impl._rejections)
-        return removed
 
 
 def protect(
@@ -439,6 +690,7 @@ def protect(
     router: Router | None = None,
     policy: TrustPolicy | None = None,
     audit_log_path: str | Path | None = None,
+    source_validator: SourceValidator | None = None,
 ) -> ProtectedMemory:
     """Wrap a memory store with source-aware admission.
 
@@ -455,9 +707,15 @@ def protect(
         declared in exactly one of these lists. Accessing an undeclared
         channel raises :class:`UnknownChannelError`.
     router:
-        Content router. Defaults to :class:`~sourced_memory.router.RuleBasedRouter`
-        (dependency-free). For production, pass an
-        :class:`~sourced_memory.router.LLMRouter`.
+        Content router. If omitted, defaults to
+        :class:`~sourced_memory.router.RuleBasedRouter` and emits a
+        :class:`RoutingDegradedWarning` at construction; the keyword-only
+        router misses third-person personal claims and does not match the
+        paper's validated behavior. For paper-quality routing pass an
+        :class:`~sourced_memory.router.LLMRouter` explicitly. To silence
+        the warning without upgrading, pass ``router=RuleBasedRouter()``
+        explicitly to signal an informed choice; a one-time INFO log names
+        the tradeoff.
     policy:
         Admission policy. Defaults to the paper's reference (source × type)
         rules.
@@ -466,12 +724,26 @@ def protect(
         appended as one JSON line, and ``memory.purge(source_id=...)``
         rewrites the file to drop matching entries. The ``sourced-memory``
         CLI reads this format for ``inspect`` / ``decisions`` / ``purge``.
+    source_validator:
+        Optional application-supplied hook, ``(channel_name, content,
+        source_id) -> bool``. Called before the router runs; returning
+        ``False`` or raising an exception short-circuits admission to
+        REJECT (saving the router call and its cost). The library assumes
+        source metadata is honestly supplied by default; this hook is
+        where an application plugs in its own source authentication
+        (signature check, network origin, session token) to close the
+        source-spoofing gap. Failing loudly is the right default here.
     """
+    router_was_explicit = router is not None
+    if router is None:
+        router = RuleBasedRouter()
+    _notify_router_choice(router, router_was_explicit)
     return ProtectedMemory(
         store=store,
         trusted=trusted or [],
         untrusted=untrusted or [],
-        router=router or RuleBasedRouter(),
+        router=router,
         policy=policy or TrustPolicy.reference(),
         audit_log_path=audit_log_path,
+        source_validator=source_validator,
     )

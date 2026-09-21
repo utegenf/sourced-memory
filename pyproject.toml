@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sourced-memory"
-version = "0.1.0a5"
+version = "0.1.0a6"
 description = "Source-aware admission control for persistent agent memory."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -40,6 +40,16 @@ sourced-memory = "sourced_memory.cli:main"
 [project.urls]
 Repository = "https://github.com/utegenf/sourced-memory"
 Issues = "https://github.com/utegenf/sourced-memory/issues"
+
+# RoutingDegradedWarning is intentionally noisy in production; the test
+# suite exercises the loud-default path repeatedly and does not need to
+# print the warning body 20+ times per run. Tests that specifically
+# assert the warning still fire it via ``pytest.warns(...)``, which
+# supersedes filterwarnings.
+[tool.pytest.ini_options]
+filterwarnings = [
+    "ignore::sourced_memory.protect.RoutingDegradedWarning",
+]
 
 # Wheel contents come from src/sourced_memory only; the research/ tree is a
 # reproducibility artifact and is intentionally not shipped in the package.

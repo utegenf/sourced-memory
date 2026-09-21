@@ -25,6 +25,9 @@ under :mod:`sourced_memory.advanced`.
 from .protect import (
     AuditEntry,
     ProtectedMemory,
+    PurgeResult,
+    RoutingDegradedWarning,
+    SourceValidator,
     UnknownChannelError,
     protect,
 )
@@ -55,7 +58,10 @@ __all__ = [
     "protect",
     "ProtectedMemory",
     "AuditEntry",
+    "PurgeResult",
     "UnknownChannelError",
+    "RoutingDegradedWarning",
+    "SourceValidator",
     # Domain types
     "AdmissionDecision",
     "Belief",
@@ -72,4 +78,4 @@ __all__ = [
     "NullRouter",
     "CallableRouter",
 ]
-__version__ = "0.1.0a5"
+__version__ = "0.1.0a6"

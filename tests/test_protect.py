@@ -119,8 +119,12 @@ def test_purge_removes_all_state_for_source_id():
     memory.user.session("session_47").add("I love hiking.")
     memory.user.session("session_99").add("Different session.")
 
-    removed = memory.purge(source_id="session_47")
-    assert removed >= 2   # at least the two audit entries and their belief records
+    result = memory.purge(source_id="session_47")
+    # In-process backend: complete removal, no unreachables, no gaps.
+    assert result.audit_entries_removed >= 2
+    assert result.records_unreachable_in_backing_store == 0
+    assert result.records_that_failed_backing_delete == []
+    assert result.has_gaps is False
 
     remaining = memory.audit()
     assert all(e.source_id != "session_47" for e in remaining)

@@ -44,4 +44,4 @@ def test_advanced_imports():
 
 def test_version():
     import sourced_memory
-    assert sourced_memory.__version__ == "0.1.0a5"
+    assert sourced_memory.__version__ == "0.1.0a6"

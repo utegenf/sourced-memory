@@ -34,7 +34,15 @@ from .router import Router, RuleBasedRouter
 
 @dataclass(frozen=True)
 class DecisionRecord:
-    """The result of a single admission decision. Storage-free."""
+    """The result of a single admission decision. Storage-free.
+
+    ``backing_store_id`` is populated by adapters (e.g. :class:`WrappedMem0`)
+    with the id the underlying store returned when a BELIEF was written.
+    It is what makes ``ProtectedMemory.purge(source_id=...)`` able to
+    delete the corresponding record from the backing store on demand.
+    None when the underlying store returned no id, or when the decision
+    was not BELIEF (nothing was written to the backing store).
+    """
     content: str
     source: Source
     decision: AdmissionDecision
@@ -42,6 +50,7 @@ class DecisionRecord:
     confidence: float
     supported: bool
     summarized_content: str
+    backing_store_id: str | None = None
 
 
 class Decider:
