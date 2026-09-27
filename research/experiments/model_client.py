@@ -1,31 +1,68 @@
-"""LOCAL BEDROCK SHIM — NOT COMMITTED (see .gitignore).
+"""Bedrock model client for the research experiments.
 
 Registry-based multi-model client (per-region, per-tool-mode) so the ablation can sweep
-several agent models via the AGENT_MODEL env var. The repo's public model_client.py is the
-anthropic-SDK reference; this local file overrides it for actual runs against Bedrock.
-"""
-import ast, json, os
-import boto3
+several agent models via the AGENT_MODEL env var.
 
+Account-specific settings (AWS profile, inference-profile ARNs) are NOT stored here. Put them in
+model_registry_local.py next to this file (gitignored); it overrides the public defaults below.
+Without it, the client uses public cross-region model IDs and the standard AWS credential chain
+(AWS_PROFILE / environment variables / instance role).
+"""
+import ast, json, os, random, time
+import boto3
+from botocore.config import Config
+from botocore.exceptions import ClientError, EndpointConnectionError, ReadTimeoutError, ConnectionClosedError
+
+# Long multi-hour sweeps hit Bedrock throttling; a single unhandled error used to abort the
+# whole run. Retry transient failures with jittered exponential backoff.
+_BOTO_CFG = Config(read_timeout=300, connect_timeout=20, retries={"max_attempts": 4, "mode": "adaptive"})
+_RETRYABLE_CODES = {"ThrottlingException", "TooManyRequestsException", "ServiceUnavailableException",
+                    "ModelTimeoutException", "InternalServerException", "ModelNotReadyException",
+                    "ModelErrorException"}
+_MAX_CALL_ATTEMPTS = 10
+
+
+def _converse(region, **kwargs):
+    """bedrock-runtime converse() with retry on throttling / transient network errors."""
+    for attempt in range(_MAX_CALL_ATTEMPTS):
+        try:
+            return _client(region).converse(**kwargs)
+        except ClientError as e:
+            code = e.response.get("Error", {}).get("Code", "")
+            if code not in _RETRYABLE_CODES or attempt == _MAX_CALL_ATTEMPTS - 1:
+                raise
+        except (EndpointConnectionError, ReadTimeoutError, ConnectionClosedError):
+            if attempt == _MAX_CALL_ATTEMPTS - 1:
+                raise
+        time.sleep(min(120, (2 ** attempt) + random.uniform(0, 2)))
+
+# Public defaults: system-defined cross-region model IDs (no account-specific data).
+# Tuple: (model id or inference-profile ARN, region, tool_mode, supports_temperature)
+# Claude 5 family (Sonnet 5 / Opus 5) are reasoning-tier and reject `temperature`.
 REGISTRY = {
-    # --- Anthropic Claude family (Bedrock, eu-west-1) ---
-    # Tuple: (arn, region, tool_mode, supports_temperature)
-    # Claude 5 family (Sonnet 5 / Opus 5) are reasoning-tier and reject `temperature`.
-    "sonnet45":  ("eu.anthropic.claude-sonnet-4-5-20250929-v1:0", "eu-west-1", "force", True),
-    "sonnet5":   ("eu.anthropic.claude-sonnet-5",                 "eu-west-1", "force", False),
-    "opus5":     ("eu.anthropic.claude-opus-5",                   "eu-west-1", "force", False),
-    "haiku45":   ("eu.anthropic.claude-haiku-4-5-20251001-v1:0",  "eu-west-1", "force", True),
-    # --- Other providers ---
+    "sonnet45":  ("eu.anthropic.claude-sonnet-4-5-20250929-v1:0",         "eu-west-1", "force", True),
+    "sonnet5":   ("eu.anthropic.claude-sonnet-5",                         "eu-west-1", "force", False),
+    "opus5":     ("eu.anthropic.claude-opus-5",                           "eu-west-1", "force", False),
+    "haiku45":   ("eu.anthropic.claude-haiku-4-5-20251001-v1:0",          "eu-west-1", "force", True),
     "nova_pro":  ("eu.amazon.nova-pro-v1:0",                              "eu-west-1", "force", True),
     "nova_lite": ("eu.amazon.nova-lite-v1:0",                             "eu-west-1", "force", True),
     "llama4":    ("us.meta.llama4-maverick-17b-instruct-v1:0",            "us-west-2", "auto",  True),
     "judge":     ("openai.gpt-oss-120b-1:0",                              "eu-west-1", "force", True),
 }
-_PROFILE = None
+_PROFILE = os.environ.get("AWS_PROFILE")  # None -> default credential chain
+
+try:  # local, gitignored overrides (AWS profile, account-specific inference-profile ARNs)
+    import model_registry_local as _local
+    REGISTRY.update(getattr(_local, "REGISTRY", {}))
+    _PROFILE = getattr(_local, "AWS_PROFILE", _PROFILE)
+except ImportError:
+    pass
+
 _clients = {}
 def _client(region):
     if region not in _clients:
-        _clients[region] = boto3.Session(profile_name=_PROFILE).client("bedrock-runtime", region_name=region)
+        session = boto3.Session(profile_name=_PROFILE) if _PROFILE else boto3.Session()
+        _clients[region] = session.client("bedrock-runtime", region_name=region, config=_BOTO_CFG)
     return _clients[region]
 
 AGENT_KEY = os.environ.get("AGENT_MODEL", "sonnet45")
@@ -49,7 +86,7 @@ def _cfg(supports_temp):
 
 def complete_text(sp, up, model_id=None, seed=None):
     arn, region, _, supports_temp = _resolve(model_id or AGENT_MODEL)
-    r=_client(region).converse(modelId=arn, system=[{"text":sp}],
+    r=_converse(region, modelId=arn, system=[{"text":sp}],
         messages=[{"role":"user","content":[{"text":up}]}], inferenceConfig=_cfg(supports_temp))
     # Some models occasionally return an empty content array (safety filter, empty completion, etc.).
     # Prefer a text block if present; otherwise concatenate any text pieces found; fall back to "".
@@ -105,7 +142,7 @@ def complete_structured(sp, up, pm, model_id=None, seed=None):
     for sys in sys_variants:
         got_toolUse_at_all = False
         for attempt in range(max_transient_retries + 1):
-            r = _client(region).converse(modelId=arn, system=[{"text": sys}],
+            r = _converse(region, modelId=arn, system=[{"text": sys}],
                 messages=[{"role": "user", "content": [{"text": up}]}], toolConfig=tc, inferenceConfig=_cfg(supports_temp))
             tool_block = None
             for b in r["output"]["message"]["content"]:

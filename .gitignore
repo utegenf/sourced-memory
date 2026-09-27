@@ -41,7 +41,8 @@ env/
 *.bak
 *.pre-opus5.bak
 
-# Secrets — never commit
+# Secrets / account-specific config — never commit
+research/experiments/model_registry_local.py
 .env
 *.pem
 credentials
