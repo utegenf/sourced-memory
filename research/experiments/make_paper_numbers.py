@@ -36,6 +36,9 @@ MODELS = [  # (key used in \R, display name, ablation result tag)
     ("qwenS", "Qwen3-32B", "qwen3_32b_v4"),
 ]
 CONDITIONS = ["TARGET", "IRREDUCIBLE", "CONTROL", "AUTHORIZATION", "PARANOIA", "SPOOF"]
+# Display names used in tables and figures (result keys keep the run's condition names).
+COND_LABEL = {"TARGET": "TARGET", "IRREDUCIBLE": "IRREDUCIBLE", "CONTROL": "CONTROL",
+              "AUTHORIZATION": "AUTHORIZATION", "PARANOIA": "WORLD-FACT", "SPOOF": "QUOTED"}
 # model key -> result tag of a reflection-only rerun judged by the common judge (GPT-6 Astra)
 REFLECTION_OVERRIDE = {"opus5": "opus5_refl_g6"}
 AGENTS = ["rag", "reflection", "schema_no_prov", "schema_conf", "content_judge", "llm_prov",
@@ -44,11 +47,16 @@ AGENTS = ["rag", "reflection", "schema_no_prov", "schema_conf", "content_judge",
 INJECT_TAGS = {"opus5": "inject_opus5", "deepseek": "inject_deepseek_v32",
                "qwenL": "inject_qwen3_235b", "qwenS": "inject_qwen3_32b"}
 INJECT_CONDITIONS = ["INJECT_OVERRIDE", "INJECT_FORGED", "INJECT_SUMMARY"]
-INJECT_AGENTS = ["content_judge", "llm_prov", "schema_prov"]
+INJECT_AGENTS = ["content_judge", "llm_prov", "llm_prov_spot", "llm_prov_rule", "schema_prov"]
+# model key -> run tag of the prompted manager with standard injection defenses (same conditions + CONTROL)
+DEFENSE_TAGS = {"opus5": "defense_opus5", "deepseek": "defense_deepseek_v32",
+                "qwenL": "defense_qwen3_235b", "qwenS": "defense_qwen3_32b"}
+DEFENSE_AGENTS = ["llm_prov_spot", "llm_prov_rule"]
 AGENT_LABEL = {"rag": "RAG", "reflection": "Reflection", "schema_no_prov": "Source-blind",
                "schema_conf": "Confidence", "content_judge": "Skeptical LLM",
                "llm_prov": "Prompted provenance", "schema_prov": "Structural",
-               "schema_prov_cand": "Structural + candidate"}
+               "schema_prov_cand": "Structural + candidate",
+               "llm_prov_spot": "Prompted + Spotlighting", "llm_prov_rule": "Prompted + rule"}
 JUDGE_LABEL = {"judge": "gpt-oss-120b", "judge_oss": "gpt-oss-120b", "gpt6_astra": "GPT-6 Astra"}
 
 
@@ -182,16 +190,21 @@ def add_mem0(vals, data, tag):
 TAUS = (0.50, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95)
 
 
-def add_confidence(vals, mkey, tag):
-    """Router self-confidence per condition and the outcome of every threshold tau, from the
-    per-record gate confidence of the source-blind schema arm."""
+def router_confidences(tag):
+    """Per-condition router confidences recorded for the source-blind schema arm."""
     import glob
-    import statistics as st
     conf = {c: [] for c in CONDITIONS}
     for f in glob.glob(os.path.join(RESULTS, "runs", tag, "*_r*.json")):
         for r in json.load(open(f))["records"]:
             if r["agent"] == "schema_no_prov" and r.get("gate_confidence") is not None:
                 conf[r["condition"]].append(r["gate_confidence"])
+    return conf
+
+
+def add_confidence(vals, mkey, tag):
+    """Router self-confidence per condition and the outcome of every threshold tau."""
+    import statistics as st
+    conf = router_confidences(tag)
     for c, v in conf.items():
         vals.put(f"{mkey}.conf.{c}.mean", f"{st.mean(v):.3f}")
         vals.put(f"{mkey}.conf.{c}.sd", f"{st.pstdev(v):.3f}")
@@ -201,10 +214,12 @@ def add_confidence(vals, mkey, tag):
             vals.put(f"{mkey}.{t}.{c}", pct(sum(x >= tau for x in conf[c]) / len(conf[c])))
 
 
-def add_inject(vals, mkey, data, tag):
-    cis, items = item_cis([tag], lambda r: (r["condition"], r["agent"]))
-    for c in INJECT_CONDITIONS:
+def add_inject(vals, mkey, data, tags):
+    cis, items = item_cis(tags, lambda r: (r["condition"], r["agent"]))
+    for c in INJECT_CONDITIONS + ["CONTROL"]:
         for a in INJECT_AGENTS:
+            if c not in data["summary"] or a not in data["summary"][c]:
+                continue
             cell = data["summary"][c][a]
             for outcome in ("trusted", "candidate", "absent"):
                 d = cell[outcome]
@@ -220,22 +235,44 @@ def add_inject(vals, mkey, data, tag):
 def write_inject_table(inj, path):
     """Trusted % under each injection variant, per model and agent."""
     tex = ["% AUTO-GENERATED. Do not edit.", "\\begin{tabular}{ll" + "r" * len(INJECT_AGENTS) + "}",
-           "\\toprule", "Attack & Model & " + " & ".join(AGENT_LABEL[a] for a in INJECT_AGENTS) + " \\\\",
+           "\\toprule", "Cue level & Model & " + " & ".join(AGENT_LABEL[a] for a in INJECT_AGENTS) + " \\\\",
            "\\midrule"]
-    names = {"INJECT_OVERRIDE": "Instruction override", "INJECT_FORGED": "Forged channel label",
-             "INJECT_SUMMARY": "Imported memory summary"}
-    for c in INJECT_CONDITIONS:
+    names = {"INJECT_OVERRIDE": "Explicit instruction", "INJECT_FORGED": "Forged channel tag",
+             "INJECT_SUMMARY": "Third-person attribution"}
+    for c in ["INJECT_SUMMARY", "INJECT_FORGED", "INJECT_OVERRIDE"]:  # ladder order
         first = True
         for mkey, mname, _ in MODELS:
             if mkey not in inj:
                 continue
-            cells = [pct(inj[mkey]["summary"][c][a]["trusted"]["frac"]) for a in INJECT_AGENTS]
+            cells = [pct(inj[mkey]["summary"][c][a]["trusted"]["frac"]) if a in inj[mkey]["summary"][c] else "--"
+                     for a in INJECT_AGENTS]
             tex.append(f"{names[c] if first else ''} & {mname} & " + " & ".join(cells) + " \\\\")
             first = False
         tex.append("\\midrule")
     tex[-1] = "\\bottomrule"
     tex.append("\\end{tabular}")
     open(path, "w").write("\n".join(tex) + "\n")
+
+
+def load_inject():
+    """Injection results per model key, with the defended-manager cells merged in."""
+    def complete(d):
+        return d and d["meta"]["jobs_complete"].split("/")[0] == d["meta"]["jobs_complete"].split("/")[1]
+    inj, tags_by_model, missing = {}, {}, []
+    for mkey, tag in INJECT_TAGS.items():
+        d, dd = load(f"ablation_{tag}.json"), load(f"ablation_{DEFENSE_TAGS[mkey]}.json")
+        if not complete(d):
+            missing.append(f"ablation_{tag}.json (absent or incomplete)")
+            continue
+        tags = [tag]
+        if complete(dd):
+            for c, row in dd["summary"].items():
+                d["summary"].setdefault(c, {}).update({a: row[a] for a in DEFENSE_AGENTS if a in row})
+            tags.append(DEFENSE_TAGS[mkey])
+        else:
+            missing.append(f"ablation_{DEFENSE_TAGS[mkey]}.json (absent or incomplete)")
+        inj[mkey], tags_by_model[mkey] = d, tags
+    return inj, tags_by_model, missing
 
 
 def load_models():
@@ -287,7 +324,7 @@ def write_main_table(data, mkey, mname, path):
         for a in cols:
             d = data["summary"][c][a]["trusted"]
             cells.append(f"{d['k']}")
-        rows.append(f"{c} & " + " & ".join(cells) + " \\\\")
+        rows.append(f"{COND_LABEL[c]} & " + " & ".join(cells) + " \\\\")
     n = data["summary"]["TARGET"]["schema_prov"]["trusted"]["n"]
     tex = [f"% AUTO-GENERATED ({mname}). Do not edit.",
            "\\begin{tabular}{l" + "r" * len(cols) + "}",
@@ -311,7 +348,7 @@ def write_crossmodel_table(all_data, path):
             if d is None:
                 continue
             cells = [pct(d["summary"][c][a]["trusted"]["frac"]) for a in agents]
-            tex.append(f"{c if i == 0 else ''} & {mname} & " + " & ".join(cells) + " \\\\")
+            tex.append(f"{COND_LABEL[c] if i == 0 else ''} & {mname} & " + " & ".join(cells) + " \\\\")
         tex.append("\\midrule")
     # policy fidelity row: untrusted world facts kept as candidate evidence
     for i, (mkey, mname, _) in enumerate(MODELS):
@@ -319,7 +356,7 @@ def write_crossmodel_table(all_data, path):
         if d is None:
             continue
         cells = [pct(d["summary"]["PARANOIA"][a]["candidate"]["frac"]) for a in agents]
-        tex.append(f"{'PARANOIA (candidate)' if i == 0 else ''} & {mname} & " + " & ".join(cells) + " \\\\")
+        tex.append(f"{'WORLD-FACT (candidate)' if i == 0 else ''} & {mname} & " + " & ".join(cells) + " \\\\")
     tex += ["\\bottomrule", "\\end{tabular}"]
     open(path, "w").write("\n".join(tex) + "\n")
 
@@ -330,7 +367,7 @@ def write_judge_table(data, path):
            "Condition & $n$ & Agreement (\\%) & " + " & ".join(f"Trusted ({JUDGE_LABEL.get(j, j)})" for j in judges) + " \\\\",
            "\\midrule"]
     for c, row in data["per_condition"].items():
-        tex.append(f"{c} & {row['n']} & {pct(row['agreement'])} & " +
+        tex.append(f"{COND_LABEL.get(c, c)} & {row['n']} & {pct(row['agreement'])} & " +
                    " & ".join(str(row[f'trusted_{j}']) for j in judges) + " \\\\")
     tex += ["\\midrule",
             f"All & {data['n']} & {pct(data['agreement'])} & " +
@@ -351,14 +388,10 @@ def main():
         if mkey in all_data:
             add_ablation(vals, mkey, all_data[mkey], tag)
             add_confidence(vals, mkey, tag)
-    inj = {}
-    for mkey, tag in INJECT_TAGS.items():
-        d = load(f"ablation_{tag}.json")
-        if d and d["meta"]["jobs_complete"].split("/")[0] == d["meta"]["jobs_complete"].split("/")[1]:
-            inj[mkey] = d
-            add_inject(vals, mkey, d, tag)
-        else:
-            missing.append(f"ablation_{tag}.json (absent or incomplete)")
+    inj, inj_tags, inj_missing = load_inject()
+    missing += inj_missing
+    for mkey, d in inj.items():
+        add_inject(vals, mkey, d, inj_tags[mkey])
     j = load("judge_agreement_judge_agree_opus5.json")
     if j:
         add_judge(vals, j)

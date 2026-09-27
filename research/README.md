@@ -60,3 +60,4 @@ Runs checkpoint per (persona, repeat) and resume with the same `--tag`. The pres
 | `mem0_mem0_opus5_g6.json` | Mem0 with Opus 5 (TARGET, CONTROL, SPOOF) |
 | `judge_agreement_judge_agree_opus5.json` | Agreement between GPT-6 Astra and gpt-oss-120b |
 | `ablation_inject_<model>.json` | Prompt-injection conditions (INJECT_OVERRIDE, INJECT_FORGED, INJECT_SUMMARY), 3 agents, 3 repeats |
+| `ablation_defense_<model>.json` | Same conditions plus CONTROL, prompted manager with Spotlighting (`llm_prov_spot`) or an explicit rule (`llm_prov_rule`) |

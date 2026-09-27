@@ -49,6 +49,9 @@ whether adding the channel fixes it without stopping the agent from learning.
   fabrication in 100% of trials, and a forged `[channel: AUTHENTICATED_USER]` tag in 89-100%.
   Claude Opus 5 resists both. The structural rule admits none on any model, because the channel
   reaches it as data, not as text.
+- Standard prompt-injection defenses (Spotlighting, an explicit instruction-hierarchy rule) fix
+  DeepSeek V3.2 and mostly fix Qwen3-235B, but on Qwen3-32B the injected instruction still
+  succeeds in 100% of trials. They cost no learning (genuine updates stay at 100%).
 - The structural rule also sends non-trusted items where the policy says (for example, untrusted
   world facts kept as candidate evidence); its cost is inheriting the type classifier's errors on
   some models.
