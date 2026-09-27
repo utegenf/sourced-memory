@@ -26,6 +26,7 @@ import json
 import os
 import uuid
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor
 from typing import Dict, List, Literal, Optional
 
 from pydantic import BaseModel, Field
@@ -235,7 +236,8 @@ class SleepAgent:
     machinery and consolidation, differing ONLY in whether origin modulates the update. It isolates
     the provenance gate as the single variable, so any effect cannot be attributed to anything else."""
 
-    def __init__(self, use_provenance: bool = True, confidence_threshold: float = None):
+    def __init__(self, use_provenance: bool = True, confidence_threshold: float = None,
+                 untrusted_personal_to_candidate: bool = False):
         # confidence_threshold: if set (e.g. 0.5), admit personal claims by gate CONFIDENCE instead
         # of source — models the confidence-based memory baseline ("why isn't confidence enough?").
         # Mutually exclusive with provenance gating; when set, use_provenance is ignored for personal.
@@ -243,6 +245,10 @@ class SleepAgent:
         # source-blind (always trusted) admission for personal claims.
         self.use_provenance = use_provenance
         self.confidence_threshold = confidence_threshold
+        # Policy variant (schema_prov_cand): an untrusted PERSONAL claim is held as candidate
+        # evidence instead of being rejected, so a true claim that arrived through the wrong
+        # channel is not lost. It still never becomes a trusted belief.
+        self.untrusted_personal_to_candidate = untrusted_personal_to_candidate
         self.episodic_memory: List[dict] = []
         self.semantic_store: List[BeliefEntry] = []
         self.gate_log: List[dict] = []
@@ -273,7 +279,9 @@ class SleepAgent:
             return "trusted" if (confidence is not None and confidence >= self.confidence_threshold) else None
         if not self.use_provenance:
             return "trusted"
-        return "trusted" if trusted_src else None
+        if trusted_src:
+            return "trusted"
+        return "candidate" if self.untrusted_personal_to_candidate else None
 
     def interact(self, episode: dict):
         self.episodic_memory.append(episode)
@@ -295,10 +303,15 @@ class SleepAgent:
             return
 
         # Stage 1: functional routing via the Belief Gate (content-only classification).
+        # Each episode is gated independently, so the calls run concurrently; results are
+        # consumed in the original episode order, so behaviour is unchanged.
+        with ThreadPoolExecutor(max_workers=max(1, min(16, len(self.episodic_memory)))) as ex:
+            gates = list(ex.map(
+                lambda ep: complete_structured(GATE_SYSTEM, f"Route this item:\n{ep['text']}",
+                                               GateOutput, seed=seed),
+                self.episodic_memory))
         proposed: List[BeliefEntry] = []
-        for episode in self.episodic_memory:
-            gate = complete_structured(GATE_SYSTEM, f"Route this item:\n{episode['text']}",
-                                      GateOutput, seed=seed)
+        for episode, gate in zip(self.episodic_memory, gates):
             policy = CATEGORY_POLICY[gate.category]  # legacy, used only for gate_log
             channel = episode["channel"]
             trusted_src = (channel == TRUSTED_CHANNEL)

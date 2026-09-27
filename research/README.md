@@ -1,70 +1,58 @@
 # Research: reproducing the paper
 
-This subtree contains the controlled experiments behind
-*Content Interprets, Origin Decides: Source-Aware Belief Updating for Lifelong Agent Memory*.
-It is a reproducibility artifact, **not** part of the installable library.
-The library lives in `../src/sourced_memory/` and can be used independently.
+This subtree contains the experiments behind *Content Interprets, Origin Decides: Source-Aware
+Admission for Persistent Agent Memory*. It is a reproducibility artifact and is not part of the
+installable library; it does not import `src/`.
 
 ## Layout
 
 ```
 research/
-├── experiments/    experiment scripts + LLM provider glue
-├── benchmark/      hand-authored personas + injected items (author-set ground truth)
-├── results/        raw JSON outputs from each run
-└── figures/        generated figures used in the paper
+├── benchmark/     20 hand-authored personas and their items (author-set ground truth)
+├── experiments/   experiment code, model access, and the scripts that regenerate every number and figure
+├── results/       aggregate result files (per-job files in results/runs/ are kept out of git)
+└── figures/       figures used in the paper (generated)
 ```
 
-## Install research dependencies
-
-The research scripts pull `anthropic`, `pydantic`, `matplotlib`, and `numpy`.
-Install them via the `research` extra from the repo root:
+## Regenerate every number, table, and figure (no model access needed)
 
 ```bash
-pip install -e ".[research]"
+pip install -r research/requirements.txt
+cd research/experiments
+python3 make_paper_numbers.py   # ../../paper_generated/: numbers.tex, tables, numbers.md
+python3 make_figures.py         # ../figures/fig_core.pdf, fig_outcome_dist.pdf, fig_pe_validation.pdf
+python3 make_schematics.py      # ../figures/fig_mechanism.pdf
 ```
 
-## Run the ablation
+`paper_generated/numbers.md` lists every value cited in the paper by key. Confidence intervals are
+item-level Wilson intervals (repeats averaged per item, n = distinct items). The intervals and the
+confidence-threshold sweep are computed from the per-job files in `results/runs/`, which are not in
+git; they are included in the paper's supplementary material.
+
+## Rerun the experiments
+
+Model calls go through the Amazon Bedrock Converse API (standard AWS credential chain; public model
+IDs in `model_client.py`). Account-specific overrides go in `experiments/model_registry_local.py`,
+which is git-ignored.
 
 ```bash
-export ANTHROPIC_API_KEY=<your key>
-export AGENT_MODEL=claude-sonnet-4-5                # main agent
-export JUDGE_MODEL=<a different-family model>       # cross-family presence judge only
-
-python3 research/experiments/run_provenance_ablation.py    # core n=100 ablation
-python3 research/experiments/run_mem0_spotcheck.py         # external-validity anchor
-python3 research/experiments/measure_gate_confidence.py    # confidence-vs-truth measurement
-python3 research/experiments/instrument_reversal.py        # trace the 2/100 reversal drops
-python3 research/experiments/make_figures.py               # regenerate paper figures
-python3 research/experiments/make_schematics.py            # regenerate concept diagrams
+cd research/experiments
+AGENT_MODEL=opus5 python3 run_provenance_ablation.py --tag opus5_v4 --repeats 5   # main ablation
+AGENT_MODEL=opus5 python3 run_mem0_spotcheck.py --tag mem0_opus5_g6               # Mem0 check
+AGENT_MODEL=opus5 python3 judge_agreement.py --tag judge_agree_opus5              # judge study
 ```
 
-All runs use temperature 0 (deterministic decoding); variation across `n=100`
-comes from personas and items, not sampling. The core schema-agent metric is
-deterministic (`source_id` inspection, no LLM in the loop); a cross-family
-judge is only used for paraphrase-robust presence checks on the summarization
-baseline.
+Runs checkpoint per (persona, repeat) and resume with the same `--tag`. The presence judge
+(`JUDGE_MODEL`, default `gpt6_astra`) is used only for the Reflection baseline and the Mem0 check.
 
-## Results shipped in this repo
-
-The `results/` directory contains the JSON files behind every number reported
-in the paper:
+## Result files
 
 | File | Contents |
 |---|---|
-| `prov_ablation_sonnet45.json` | Core `n=100` ablation on Claude Sonnet-4.5 |
-| `prov_ablation_llama4.json` | Cross-family replication on Llama-4-Maverick |
-| `mem0_spotcheck.json` | External-validity check against Mem0 |
-| `gate_confidence.json` | Router confidence on fabrications vs genuine updates |
-| `reversal_drops.json` | Trace of the 2 dropped reversals (Stage-1 routing errors) |
-
-## Relationship to the library
-
-The research scripts predate the library refactor and remain self-contained:
-they carry their own belief store implementation (`SleepAgent`), their own
-prompts, and their own consolidation logic tuned for the paper's benchmark.
-They are **not** an example of how to use `sourced_memory`; for that see the
-top-level `examples/` directory.
-
-Rewriting the research code on top of the library is out of scope for v0 and
-would change the experimental protocol.
+| `ablation_opus5_v4.json` | Main ablation, Claude Opus 5, 5 repeats |
+| `ablation_opus5_refl_g6.json` | Opus 5 Reflection arm rerun with the common judge |
+| `ablation_deepseek_v32_v4.json` | DeepSeek V3.2, 3 repeats |
+| `ablation_qwen3_235b_v4.json` | Qwen3-235B-A22B, 3 repeats |
+| `ablation_qwen3_32b_v4.json` | Qwen3-32B, 3 repeats |
+| `mem0_mem0_opus5_g6.json` | Mem0 with Opus 5 (TARGET, CONTROL, SPOOF) |
+| `judge_agreement_judge_agree_opus5.json` | Agreement between GPT-6 Astra and gpt-oss-120b |

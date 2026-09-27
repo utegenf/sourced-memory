@@ -1,0 +1,10 @@
+# Model access and pipeline
+boto3>=1.34
+pydantic>=2.0
+# Figures
+matplotlib>=3.8
+numpy>=1.24
+# Mem0 check only
+mem0ai>=0.1
+qdrant-client>=1.7
+sentence-transformers>=2.2

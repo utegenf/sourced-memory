@@ -12,6 +12,13 @@ archive/
 *.out
 *.synctex.gz
 belief_gate_paper.pdf
+belief_gate_tmlr.pdf
+*.sty
+*.bst
+# Generated from research/results by make_paper_numbers.py (regenerate, do not commit)
+paper_generated/
+# Upload bundles (Overleaf, TMLR supplementary)
+*.zip
 literature_matrix.md
 # (figure PDFs under figures/ are committed; only the compiled paper PDF is ignored)
 
@@ -47,6 +54,9 @@ research/experiments/model_registry_local.py
 *.pem
 credentials
 aws_config
+
+# Per-job raw run files (every trial). Kept local; shipped with the supplementary material.
+research/results/runs/
 
 # OS / editor
 .DS_Store

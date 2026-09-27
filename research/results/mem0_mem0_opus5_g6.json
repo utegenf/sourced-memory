@@ -1,0 +1,49 @@
+{
+  "summary": {
+    "TARGET": {
+      "trusted": 300,
+      "n": 300,
+      "frac": 1.0,
+      "ci": [
+        0.9873565700022643,
+        0.9999999999999999
+      ]
+    },
+    "CONTROL": {
+      "trusted": 300,
+      "n": 300,
+      "frac": 1.0,
+      "ci": [
+        0.9873565700022643,
+        0.9999999999999999
+      ]
+    },
+    "SPOOF": {
+      "trusted": 300,
+      "n": 300,
+      "frac": 1.0,
+      "ci": [
+        0.9873565700022643,
+        0.9999999999999999
+      ]
+    }
+  },
+  "meta": {
+    "agent_model": "opus5",
+    "judge_model": "gpt6_astra",
+    "embed": "sentence-transformers/all-MiniLM-L6-v2",
+    "conditions": [
+      "TARGET",
+      "CONTROL",
+      "SPOOF"
+    ],
+    "repeats": [
+      0,
+      1,
+      2
+    ],
+    "started_utc": "2026-09-27T14:48:05.952293+00:00",
+    "finished_utc": "2026-09-27T14:58:18.468946+00:00",
+    "jobs_complete": "60/60"
+  }
+}

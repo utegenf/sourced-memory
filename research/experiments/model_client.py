@@ -15,15 +15,22 @@ from botocore.exceptions import ClientError, EndpointConnectionError, ReadTimeou
 
 # Long multi-hour sweeps hit Bedrock throttling; a single unhandled error used to abort the
 # whole run. Retry transient failures with jittered exponential backoff.
-_BOTO_CFG = Config(read_timeout=300, connect_timeout=20, retries={"max_attempts": 4, "mode": "adaptive"})
+# max_pool_connections: boto3 defaults to 10 connections per client, which silently caps
+# concurrency at 10 in-flight calls no matter how many threads the experiment uses.
+_BOTO_CFG = Config(read_timeout=300, connect_timeout=20, max_pool_connections=512,
+                   retries={"max_attempts": 4, "mode": "standard"})
 _RETRYABLE_CODES = {"ThrottlingException", "TooManyRequestsException", "ServiceUnavailableException",
                     "ModelTimeoutException", "InternalServerException", "ModelNotReadyException",
                     "ModelErrorException"}
 _MAX_CALL_ATTEMPTS = 10
 
 
+RETRY_STATS = {"calls": 0, "retries": 0}
+
+
 def _converse(region, **kwargs):
     """bedrock-runtime converse() with retry on throttling / transient network errors."""
+    RETRY_STATS["calls"] += 1
     for attempt in range(_MAX_CALL_ATTEMPTS):
         try:
             return _client(region).converse(**kwargs)
@@ -34,6 +41,9 @@ def _converse(region, **kwargs):
         except (EndpointConnectionError, ReadTimeoutError, ConnectionClosedError):
             if attempt == _MAX_CALL_ATTEMPTS - 1:
                 raise
+        RETRY_STATS["retries"] += 1
+        if RETRY_STATS["retries"] % 25 == 1:
+            print(f"  [bedrock] retries so far: {RETRY_STATS['retries']} / calls {RETRY_STATS['calls']}", flush=True)
         time.sleep(min(120, (2 ** attempt) + random.uniform(0, 2)))
 
 # Public defaults: system-defined cross-region model IDs (no account-specific data).
@@ -47,7 +57,15 @@ REGISTRY = {
     "nova_pro":  ("eu.amazon.nova-pro-v1:0",                              "eu-west-1", "force", True),
     "nova_lite": ("eu.amazon.nova-lite-v1:0",                             "eu-west-1", "force", True),
     "llama4":    ("us.meta.llama4-maverick-17b-instruct-v1:0",            "us-west-2", "auto",  True),
-    "judge":     ("openai.gpt-oss-120b-1:0",                              "eu-west-1", "force", True),
+    # Opus 5.5 rejects forced tool_choice on Bedrock -> "auto" mode with instruction retries.
+    "opus55":       ("eu.anthropic.claude-opus-5-5",                      "eu-west-1", "auto",  False),
+    "deepseek_v32": ("deepseek.v3.2",                                     "us-west-2", "force", True),
+    "qwen3_235b":   ("qwen.qwen3-235b-a22b-2507-v1:0",                    "us-west-2", "force", True),
+    "qwen3_32b":    ("qwen.qwen3-32b-v1:0",                               "us-west-2", "force", True),
+    # Judges (cross-family presence checks only; never used for the core schema metric).
+    "gpt6_astra":   ("us.openai.gpt-6-astra",                             "us-west-2", "force", False),
+    "judge_oss":    ("openai.gpt-oss-120b-1:0",                           "eu-west-1", "force", True),
+    "judge":        ("openai.gpt-oss-120b-1:0",                           "eu-west-1", "force", True),  # legacy alias
 }
 _PROFILE = os.environ.get("AWS_PROFILE")  # None -> default credential chain
 
@@ -67,7 +85,7 @@ def _client(region):
 
 AGENT_KEY = os.environ.get("AGENT_MODEL", "sonnet45")
 AGENT_MODEL = AGENT_KEY
-JUDGE_MODEL = "judge"
+JUDGE_MODEL = os.environ.get("JUDGE_MODEL", "gpt6_astra")
 TEMPERATURE = 0.0
 
 def _resolve(model_key):
@@ -126,7 +144,14 @@ def complete_structured(sp, up, pm, model_id=None, seed=None):
     tc={"tools":[{"toolSpec":spec}]}
     if mode=="force":
         tc["toolChoice"]={"tool":{"name":"return_structured_data"}}
-        sys_variants=[sp]
+        # Some models (e.g. DeepSeek V3.2) occasionally answer in prose despite forced
+        # toolChoice. The first attempt uses the unmodified prompt, so any call that succeeds
+        # first time behaves exactly as before; only refusals escalate to firmer instructions.
+        sys_variants=[
+            sp,
+            sp+"\n\nYou MUST respond by calling the return_structured_data tool.",
+            sp+"\n\nCRITICAL: Do NOT respond with free text or ask questions. Your ONLY valid output is a call to the return_structured_data tool, using the information given, even if it is short.",
+        ]
     else:
         # try progressively more emphatic instructions; only relevant when the model won't be forced
         sys_variants=[
@@ -138,7 +163,7 @@ def complete_structured(sp, up, pm, model_id=None, seed=None):
     # Two retry axes: (a) sys_variants (stronger-instruction retries for auto-mode); (b) transient
     # response-degradation retries (Bedrock occasionally returns tool-use payload with fields as
     # stringified JSON under concurrent load; a plain retry with identical input usually recovers).
-    max_transient_retries = 2
+    max_transient_retries = 5
     for sys in sys_variants:
         got_toolUse_at_all = False
         for attempt in range(max_transient_retries + 1):
@@ -158,10 +183,13 @@ def complete_structured(sp, up, pm, model_id=None, seed=None):
                 parse_errs.append((attempt, str(pe)[:80]))
                 # transient retry: identical input, hope Bedrock returns a clean payload
                 continue
+        # An instruction variant produced no usable tool call (the next, firmer variant is tried if any); counted for reporting.
+        RETRY_STATS["variant_failures"] = RETRY_STATS.get("variant_failures", 0) + 1
         if got_toolUse_at_all:
             # exhausted transient retries; try a stronger sys prompt if we have one
             continue
-    raise ValueError(f"{arn} returned no valid tool use after {len(sys_variants)} instruction variants x {max_transient_retries+1} retries; parse_errs={parse_errs[:3]}; last={last if last is not None else '(no toolUse block)'}")
+    # Name the model by its registry key, never by ARN (ARNs can carry account IDs into logs).
+    raise ValueError(f"model '{model_id or AGENT_MODEL}' returned no valid tool use after {len(sys_variants)} instruction variants x {max_transient_retries+1} retries; parse_errs={parse_errs[:3]}; last={last if last is not None else '(no toolUse block)'}")
 
 def _unwrap_schema_envelope(v):
     if isinstance(v, dict):
