@@ -40,6 +40,11 @@ CONDITIONS = ["TARGET", "IRREDUCIBLE", "CONTROL", "AUTHORIZATION", "PARANOIA", "
 REFLECTION_OVERRIDE = {"opus5": "opus5_refl_g6"}
 AGENTS = ["rag", "reflection", "schema_no_prov", "schema_conf", "content_judge", "llm_prov",
           "schema_prov", "schema_prov_cand"]
+# model key -> run tag of the prompt-injection ablation (opt-in INJECT_* conditions)
+INJECT_TAGS = {"opus5": "inject_opus5", "deepseek": "inject_deepseek_v32",
+               "qwenL": "inject_qwen3_235b", "qwenS": "inject_qwen3_32b"}
+INJECT_CONDITIONS = ["INJECT_OVERRIDE", "INJECT_FORGED", "INJECT_SUMMARY"]
+INJECT_AGENTS = ["content_judge", "llm_prov", "schema_prov"]
 AGENT_LABEL = {"rag": "RAG", "reflection": "Reflection", "schema_no_prov": "Source-blind",
                "schema_conf": "Confidence", "content_judge": "Skeptical LLM",
                "llm_prov": "Prompted provenance", "schema_prov": "Structural",
@@ -196,6 +201,43 @@ def add_confidence(vals, mkey, tag):
             vals.put(f"{mkey}.{t}.{c}", pct(sum(x >= tau for x in conf[c]) / len(conf[c])))
 
 
+def add_inject(vals, mkey, data, tag):
+    cis, items = item_cis([tag], lambda r: (r["condition"], r["agent"]))
+    for c in INJECT_CONDITIONS:
+        for a in INJECT_AGENTS:
+            cell = data["summary"][c][a]
+            for outcome in ("trusted", "candidate", "absent"):
+                d = cell[outcome]
+                base = f"{mkey}.{c}.{a}.{outcome}"
+                vals.put(f"{base}.k", d["k"])
+                vals.put(f"{base}.n", d["n"])
+                vals.put(f"{base}.pct", pct(d["frac"]))
+                vals.put(f"{base}.cilo", pct(cis[(c, a)][outcome][0]))
+                vals.put(f"{base}.cihi", pct(cis[(c, a)][outcome][1]))
+            vals.put(f"{mkey}.{c}.{a}.items", items[(c, a)])
+
+
+def write_inject_table(inj, path):
+    """Trusted % under each injection variant, per model and agent."""
+    tex = ["% AUTO-GENERATED. Do not edit.", "\\begin{tabular}{ll" + "r" * len(INJECT_AGENTS) + "}",
+           "\\toprule", "Attack & Model & " + " & ".join(AGENT_LABEL[a] for a in INJECT_AGENTS) + " \\\\",
+           "\\midrule"]
+    names = {"INJECT_OVERRIDE": "Instruction override", "INJECT_FORGED": "Forged channel label",
+             "INJECT_SUMMARY": "Imported memory summary"}
+    for c in INJECT_CONDITIONS:
+        first = True
+        for mkey, mname, _ in MODELS:
+            if mkey not in inj:
+                continue
+            cells = [pct(inj[mkey]["summary"][c][a]["trusted"]["frac"]) for a in INJECT_AGENTS]
+            tex.append(f"{names[c] if first else ''} & {mname} & " + " & ".join(cells) + " \\\\")
+            first = False
+        tex.append("\\midrule")
+    tex[-1] = "\\bottomrule"
+    tex.append("\\end{tabular}")
+    open(path, "w").write("\n".join(tex) + "\n")
+
+
 def load_models():
     """Ablation result per model key, with the common-judge reflection override applied."""
     all_data, missing = {}, []
@@ -309,6 +351,14 @@ def main():
         if mkey in all_data:
             add_ablation(vals, mkey, all_data[mkey], tag)
             add_confidence(vals, mkey, tag)
+    inj = {}
+    for mkey, tag in INJECT_TAGS.items():
+        d = load(f"ablation_{tag}.json")
+        if d and d["meta"]["jobs_complete"].split("/")[0] == d["meta"]["jobs_complete"].split("/")[1]:
+            inj[mkey] = d
+            add_inject(vals, mkey, d, tag)
+        else:
+            missing.append(f"ablation_{tag}.json (absent or incomplete)")
     j = load("judge_agreement_judge_agree_opus5.json")
     if j:
         add_judge(vals, j)
@@ -326,6 +376,8 @@ def main():
     write_crossmodel_table(all_data, os.path.join(OUT, "tab_crossmodel.tex"))
     if j:
         write_judge_table(j, os.path.join(OUT, "tab_judge.tex"))
+    if inj:
+        write_inject_table(inj, os.path.join(OUT, "tab_inject.tex"))
     with open(os.path.join(OUT, "numbers.md"), "w") as f:
         f.write("# Generated result values\n\n| key | value |\n|---|---|\n")
         for k in sorted(vals.v):
