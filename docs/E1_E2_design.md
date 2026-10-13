@@ -1,6 +1,5 @@
 # E1/E2 design: end-to-end memory poisoning and confirmation laundering
 
-Target: AAAI-27 workshop "LLM Agents Under Threat", deadline 2026-11-20 AoE.
 Models: Claude Opus 5 and Qwen3-32B. The same model acts as agent and memory writer; GPT-6 Astra is the judge.
 
 ## Threat model
