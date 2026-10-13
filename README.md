@@ -360,10 +360,11 @@ before `0.1.0`.
 ## Research
 
 The library implements the mechanism proposed in *Content Interprets,
-Origin Decides: Source-Aware Admission for Persistent Agent Memory*.
-The paper is not required reading to use the library; see
-[`docs/research.md`](docs/research.md) if you want the empirical grounding
-and the formal Point-of-Indistinguishability argument.
+Origin Decides: Stability and Plasticity in Agent Belief Formation*
+(AAAI-27 Workshop on LLM Agents Under Threat). The paper is not required
+reading to use the library; see [`docs/research.md`](docs/research.md) for
+the empirical grounding and [`research/`](research/README.md) to reproduce
+the controlled benchmark and the end-to-end memory-poisoning pipeline.
 
 ## License
 

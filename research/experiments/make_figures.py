@@ -205,7 +205,7 @@ def fig_threshold(models_present):
                 ax.annotate(f"$\\tau={t:.2f}$", (x, y), textcoords="offset points", xytext=(6, 4),
                             fontsize=8, color=INK)
     ax.scatter([100], [0], s=160, marker="*", color=INK, zorder=4)
-    ax.annotate("origin-aware\n(every model)", (100, 0), textcoords="offset points", xytext=(-78, 8),
+    ax.annotate("prompted provenance\n(every model)", (100, 0), textcoords="offset points", xytext=(-112, 8),
                 fontsize=8.5, color=INK)
     ax.set_xlim(-3, 106)
     ax.set_ylim(-5, 106)

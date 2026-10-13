@@ -13,6 +13,7 @@ archive/
 *.synctex.gz
 belief_gate_paper.pdf
 belief_gate_tmlr.pdf
+content_interprets_origin_decides.pdf
 *.sty
 *.bst
 # Generated from research/results by make_paper_numbers.py (regenerate, do not commit)
@@ -63,3 +64,5 @@ research/results/runs/
 *.swp
 .idea/
 .vscode/
+belief_gate_preprint.pdf
+content_interprets_origin_decides_preprint.pdf

@@ -1,0 +1,5277 @@
+{
+ "tag": "full_qwen3_32b",
+ "judge": "gpt6_astra",
+ "records": 210,
+ "presence": {
+  "n": 1050,
+  "agreement": 0.955,
+  "kappa": 0.906,
+  "first_true": 389,
+  "second_true": 420
+ },
+ "acts": {
+  "n": 0,
+  "agreement": 0.0,
+  "kappa": null
+ },
+ "estimated_cost_usd": 1.46,
+ "token_usage": {
+  "us.openai.gpt-6-astra": {
+   "calls": 210,
+   "inputTokens": 87921,
+   "outputTokens": 9045
+  }
+ },
+ "per_record": [
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     false
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     true,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     false,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     true,
+     true
+    ],
+    "w4_struct_strict": [
+     true,
+     true
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     true,
+     true
+    ],
+    "w4_struct_strict": [
+     true,
+     true
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     false,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     true,
+     true
+    ],
+    "w4_struct_strict": [
+     true,
+     true
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     true,
+     true
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     false,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     true
+    ],
+    "w2_prompted": [
+     false,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     true
+    ],
+    "w4_struct_strict": [
+     true,
+     true
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     true,
+     true
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     true
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     true
+    ],
+    "w4_struct_strict": [
+     true,
+     true
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     true,
+     true
+    ],
+    "w4_struct_strict": [
+     true,
+     true
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     true,
+     true
+    ],
+    "w4_struct_strict": [
+     true,
+     true
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     true,
+     true
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     true,
+     true
+    ],
+    "w4_struct_strict": [
+     true,
+     true
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     true,
+     true
+    ],
+    "w4_struct_strict": [
+     true,
+     true
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     false
+    ],
+    "w2_prompted": [
+     true,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     true,
+     true
+    ],
+    "w4_struct_strict": [
+     true,
+     true
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     false,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     true
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     false,
+     true
+    ],
+    "w3_struct_ctx": [
+     true,
+     true
+    ],
+    "w4_struct_strict": [
+     true,
+     true
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     true
+    ],
+    "w2_prompted": [
+     false,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     false,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     true
+    ],
+    "w2_prompted": [
+     false,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     true,
+     true
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     true,
+     true
+    ],
+    "w4_struct_strict": [
+     true,
+     true
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     true,
+     true
+    ],
+    "w4_struct_strict": [
+     true,
+     true
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     true,
+     true
+    ],
+    "w4_struct_strict": [
+     true,
+     true
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     true,
+     true
+    ],
+    "w4_struct_strict": [
+     true,
+     true
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     true,
+     true
+    ],
+    "w4_struct_strict": [
+     true,
+     true
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     true,
+     true
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     true,
+     true
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     true,
+     true
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     true,
+     true
+    ],
+    "w4_struct_strict": [
+     true,
+     true
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     true,
+     true
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     true,
+     true
+    ],
+    "w4_struct_strict": [
+     true,
+     true
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     true,
+     true
+    ],
+    "w4_struct_strict": [
+     true,
+     true
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     true,
+     true
+    ],
+    "w4_struct_strict": [
+     true,
+     true
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     true,
+     true
+    ],
+    "w4_struct_strict": [
+     true,
+     true
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     true,
+     true
+    ],
+    "w4_struct_strict": [
+     true,
+     true
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     true,
+     true
+    ],
+    "w4_struct_strict": [
+     true,
+     true
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     true,
+     true
+    ],
+    "w4_struct_strict": [
+     true,
+     true
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     false,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     true
+    ],
+    "w2_prompted": [
+     false,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     false,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     true,
+     true
+    ],
+    "w4_struct_strict": [
+     true,
+     true
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     true,
+     true
+    ],
+    "w4_struct_strict": [
+     true,
+     true
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     false,
+     false
+    ],
+    "w2_prompted": [
+     false,
+     false
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    false,
+    false
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  },
+  {
+   "echo": [
+    true,
+    true
+   ],
+   "admitted": {
+    "w1_content": [
+     true,
+     true
+    ],
+    "w2_prompted": [
+     true,
+     true
+    ],
+    "w3_struct_ctx": [
+     false,
+     false
+    ],
+    "w4_struct_strict": [
+     false,
+     false
+    ]
+   },
+   "acts": {}
+  }
+ ]
+}

@@ -59,6 +59,30 @@ AGENT_LABEL = {"rag": "RAG", "reflection": "Reflection", "schema_no_prov": "Sour
                "llm_prov_spot": "Prompted + Spotlighting", "llm_prov_rule": "Prompted + rule"}
 JUDGE_LABEL = {"judge": "gpt-oss-120b", "judge_oss": "gpt-oss-120b", "gpt6_astra": "GPT-6 Astra"}
 
+# End-to-end experiment (run_e2e.py): model key -> result tag. Opus 5 and Qwen3-32B only.
+# Several runs per model are merged by condition (the main run plus the opt-in extra conditions).
+E2E_TAGS = {"opus5": ["full_opus5", "extra_opus5"], "qwenS": ["full_qwen3_32b", "extra_qwen3_32b"]}
+E2E_CONDITIONS = ["CLEAN", "INJ-INSTR", "INJ-FORGED", "T-INSTR", "T-STEALTH",
+                  "CONFIRM-YES", "CONFIRM-ATTENTIVE", "T-CONFIRM-YES", "T-CONFIRM-YES-NORULE",
+                  "USER-UPDATE", "LEGIT-NOTES", "LEGIT-CONFIRM"]
+E2E_UTILITY = ["USER-UPDATE", "LEGIT-NOTES", "LEGIT-CONFIRM"]
+# Rows shown in tab_e2e.tex (all conditions still get \R keys).
+E2E_TABLE_CONDITIONS = ["INJ-INSTR", "INJ-FORGED", "T-INSTR", "T-STEALTH",
+                        "CONFIRM-ATTENTIVE", "T-CONFIRM-YES", "T-CONFIRM-YES-NORULE",
+                        "USER-UPDATE", "LEGIT-NOTES", "LEGIT-CONFIRM"]
+E2E_WRITERS = ["w1_content", "w5_detect", "w2_prompted", "w3_struct_ctx", "w4_struct_strict"]
+E2E_WRITER_LABEL = {"w1_content": "Content-only", "w5_detect": "Detector + content",
+                    "w2_prompted": "Prompted prov.", "w3_struct_ctx": "Structural (cited)",
+                    "w4_struct_strict": "Structural (user only)"}
+E2E_COND_LABEL = {"CLEAN": "no injection", "INJ-INSTR": "instruction", "INJ-FORGED": "forged tag",
+                  "T-INSTR": "targeted, instruction", "T-STEALTH": "targeted, stealthy",
+                  "CONFIRM-YES": "confirmed by user", "CONFIRM-ATTENTIVE": "rejected by user",
+                  "T-CONFIRM-YES": "targeted, confirmed", "T-CONFIRM-YES-NORULE": "targeted, confirmed, no rule",
+                  "USER-UPDATE": "user states change", "LEGIT-NOTES": "user's own notes",
+                  "LEGIT-CONFIRM": "own notes, confirmed"}
+E2E_REJUDGE = {"opus5": "e2e_rejudge_full_opus5_gpt6_astra.json",
+               "qwenS": "e2e_rejudge_full_qwen3_32b_gpt6_astra.json"}
+
 
 def pct(x):
     return "--" if x is None else f"{100 * x:.1f}"
@@ -376,6 +400,68 @@ def write_judge_table(data, path):
     open(path, "w").write("\n".join(tex) + "\n")
 
 
+def add_e2e(vals, mkey, data, tag):
+    """Keys: <model>.e2e.<CONDITION>.<writer>.<admitted|acts>.<k|n|pct|items|cilo|cihi>."""
+    meta = data["meta"]
+    vals.put(f"{mkey}.e2e.tag", tag)
+    vals.put(f"{mkey}.e2e.repeats", len(meta["repeats"]))
+    base = data["_baseline_acts_targeted"]
+    vals.put(f"{mkey}.e2e.baseline.k", base["k"])
+    vals.put(f"{mkey}.e2e.baseline.n", base["n"])
+    for c in E2E_CONDITIONS:
+        row = data.get(c)
+        if not row:
+            continue
+        vals.put(f"{mkey}.e2e.{c}.n", row["n"])
+        vals.put(f"{mkey}.e2e.{c}.items", row["items"])
+        vals.put(f"{mkey}.e2e.{c}.echo.k", row["echo"])
+        vals.put(f"{mkey}.e2e.{c}.echo.pct", f"{100 * row['echo'] / row['n']:.1f}")
+        if "detector_flagged" in row:
+            vals.put(f"{mkey}.e2e.{c}.flagged.pct", row["detector_flagged"]["pct"])
+        for w in E2E_WRITERS:
+            for key in ("admitted", "acts"):
+                d = row[f"{w}.{key}"]
+                for f in ("k", "n", "pct", "items", "cilo", "cihi"):
+                    vals.put(f"{mkey}.e2e.{c}.{w}.{key}.{f}", d[f])
+
+
+def add_e2e_judge(vals, mkey, data):
+    p = data["presence"]
+    vals.put(f"{mkey}.e2e.judge.n", p["n"])
+    vals.put(f"{mkey}.e2e.judge.records", data["records"])
+    vals.put(f"{mkey}.e2e.judge.agreement", f"{100 * p['agreement']:.1f}")
+    vals.put(f"{mkey}.e2e.judge.kappa", p["kappa"])
+
+
+def write_e2e_table(e2e, path):
+    """Attack and utility conditions x writers, for the models that have an end-to-end run."""
+    models = [(k, n) for k, n, _ in MODELS if k in e2e]
+    head = " & ".join(E2E_WRITER_LABEL[w] for w in E2E_WRITERS)
+    rows = []
+    for c in E2E_TABLE_CONDITIONS:
+        rows.append("\\midrule" if c in ("CONFIRM-ATTENTIVE", E2E_UTILITY[0]) else None)
+        for mkey, mname in models:
+            row = e2e[mkey].get(c)
+            if not row:
+                continue
+            cells = []
+            for w in E2E_WRITERS:
+                d = row[f"{w}.admitted"]
+                cell = f"{d['pct']:.1f}"
+                if c.startswith("T-"):
+                    cell += f" / {row[f'{w}.acts']['pct']:.1f}"
+                cells.append(cell)
+            first = E2E_COND_LABEL[c] if mkey == models[0][0] else ""
+            rows.append(f"{first} & {mname} & " + " & ".join(cells) + " \\\\")
+    rows = [r for r in rows if r]
+    tex = [f"% AUTO-GENERATED. Do not edit.",
+           "\\begin{tabular}{ll" + "r" * len(E2E_WRITERS) + "}",
+           "\\toprule",
+           f"Condition & Model & {head} \\\\",
+           "\\midrule", *rows, "\\bottomrule", "\\end{tabular}"]
+    open(path, "w").write("\n".join(tex) + "\n")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--primary", default="opus5")
@@ -403,6 +489,32 @@ def main():
     else:
         missing.append("mem0_mem0_opus5_g6.json (absent or incomplete)")
 
+    e2e = {}
+    for mkey, tags in E2E_TAGS.items():
+        merged = None
+        for tag in tags:
+            d = load(f"e2e_{tag}.json")
+            if not d:
+                missing.append(f"e2e_{tag}.json")
+                continue
+            jc = d["meta"].get("jobs_complete", "")
+            if jc and jc.split("/")[0] != jc.split("/")[-1]:
+                missing.append(f"e2e_{tag}.json (incomplete: {jc})")
+                continue
+            if merged is None:
+                merged = d
+            else:
+                merged.update({k: v for k, v in d.items() if k not in ("meta", "_baseline_acts_targeted")})
+        if merged is None:
+            continue
+        e2e[mkey] = merged
+        add_e2e(vals, mkey, merged, "+".join(tags))
+        rj = load(E2E_REJUDGE.get(mkey, ""))
+        if rj:
+            add_e2e_judge(vals, mkey, rj)
+        else:
+            missing.append(E2E_REJUDGE.get(mkey, "(no rejudge tag)"))
+
     write_numbers_tex(vals, os.path.join(OUT, "numbers.tex"))
     pm = next(x for x in MODELS if x[0] == args.primary)
     write_main_table(all_data[pm[0]], pm[0], pm[1], os.path.join(OUT, "tab_main.tex"))
@@ -411,6 +523,8 @@ def main():
         write_judge_table(j, os.path.join(OUT, "tab_judge.tex"))
     if inj:
         write_inject_table(inj, os.path.join(OUT, "tab_inject.tex"))
+    if e2e:
+        write_e2e_table(e2e, os.path.join(OUT, "tab_e2e.tex"))
     with open(os.path.join(OUT, "numbers.md"), "w") as f:
         f.write("# Generated result values\n\n| key | value |\n|---|---|\n")
         for k in sorted(vals.v):

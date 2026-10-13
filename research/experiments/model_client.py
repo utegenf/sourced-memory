@@ -26,14 +26,50 @@ _MAX_CALL_ATTEMPTS = 10
 
 
 RETRY_STATS = {"calls": 0, "retries": 0}
+# Token usage per model ID, so a run can report its own cost.
+USAGE = {}
+_USAGE_LOCK = __import__("threading").Lock()
+
+
+# On-demand USD per 1M tokens (input, output), from the AWS Pricing API on 2026-10-08.
+# Regional rates where they differ from global; unknown models count at the Opus rate.
+PRICES = {"eu.anthropic.claude-opus-5": (5.5, 27.5), "global.anthropic.claude-opus-5": (5.0, 25.0), "qwen.qwen3-32b-v1:0": (0.15, 0.6),
+          "openai.gpt-oss-120b-1:0": (0.18, 0.7), "openai.gpt-oss-safeguard-120b": (0.18, 0.7), "us.openai.gpt-6-astra": (11.0, 55.0)}
+# Hard stop: once the estimated spend of this process passes BEDROCK_COST_CAP_USD, calls fail.
+COST_CAP_USD = float(os.environ.get("BEDROCK_COST_CAP_USD", "0") or 0)
+
+
+class BudgetExceeded(RuntimeError):
+    pass
+
+
+def spent_usd():
+    total = 0.0
+    for mid, d in USAGE.items():
+        pin, pout = PRICES.get(mid, (5.5, 27.5))
+        total += d["inputTokens"] * pin / 1e6 + d["outputTokens"] * pout / 1e6
+    return total
+
+
+def _record_usage(model_id, resp):
+    u = resp.get("usage", {})
+    with _USAGE_LOCK:
+        d = USAGE.setdefault(model_id, {"calls": 0, "inputTokens": 0, "outputTokens": 0})
+        d["calls"] += 1
+        d["inputTokens"] += u.get("inputTokens", 0)
+        d["outputTokens"] += u.get("outputTokens", 0)
 
 
 def _converse(region, **kwargs):
     """bedrock-runtime converse() with retry on throttling / transient network errors."""
     RETRY_STATS["calls"] += 1
+    if COST_CAP_USD and spent_usd() >= COST_CAP_USD:
+        raise BudgetExceeded(f"cost cap ${COST_CAP_USD:.2f} reached (spent ${spent_usd():.2f})")
     for attempt in range(_MAX_CALL_ATTEMPTS):
         try:
-            return _client(region).converse(**kwargs)
+            resp = _client(region).converse(**kwargs)
+            _record_usage(kwargs.get("modelId", "?"), resp)
+            return resp
         except ClientError as e:
             code = e.response.get("Error", {}).get("Code", "")
             if code not in _RETRYABLE_CODES or attempt == _MAX_CALL_ATTEMPTS - 1:
@@ -53,6 +89,7 @@ REGISTRY = {
     "sonnet45":  ("eu.anthropic.claude-sonnet-4-5-20250929-v1:0",         "eu-west-1", "force", True),
     "sonnet5":   ("eu.anthropic.claude-sonnet-5",                         "eu-west-1", "force", False),
     "opus5":     ("eu.anthropic.claude-opus-5",                           "eu-west-1", "force", False),
+    "opus5_global": ("global.anthropic.claude-opus-5",                    "eu-west-1", "force", False),
     "haiku45":   ("eu.anthropic.claude-haiku-4-5-20251001-v1:0",          "eu-west-1", "force", True),
     "nova_pro":  ("eu.amazon.nova-pro-v1:0",                              "eu-west-1", "force", True),
     "nova_lite": ("eu.amazon.nova-lite-v1:0",                             "eu-west-1", "force", True),
@@ -65,16 +102,23 @@ REGISTRY = {
     # Judges (cross-family presence checks only; never used for the core schema metric).
     "gpt6_astra":   ("us.openai.gpt-6-astra",                             "us-west-2", "force", False),
     "judge_oss":    ("openai.gpt-oss-120b-1:0",                           "eu-west-1", "force", True),
+    # Policy-based safety classifier, used as a prompt-injection detector baseline.
+    "safeguard":    ("openai.gpt-oss-safeguard-120b",                     "eu-west-1", "force", True),
     "judge":        ("openai.gpt-oss-120b-1:0",                           "eu-west-1", "force", True),  # legacy alias
 }
 _PROFILE = os.environ.get("AWS_PROFILE")  # None -> default credential chain
 
-try:  # local, gitignored overrides (AWS profile, account-specific inference-profile ARNs)
-    import model_registry_local as _local
-    REGISTRY.update(getattr(_local, "REGISTRY", {}))
-    _PROFILE = getattr(_local, "AWS_PROFILE", _PROFILE)
-except ImportError:
-    pass
+# BEDROCK_PROFILE selects an account explicitly and skips the local overrides, whose
+# inference-profile ARNs belong to a single account.
+if os.environ.get("BEDROCK_PROFILE"):
+    _PROFILE = os.environ["BEDROCK_PROFILE"]
+else:
+    try:  # local, gitignored overrides (AWS profile, account-specific inference-profile ARNs)
+        import model_registry_local as _local
+        REGISTRY.update(getattr(_local, "REGISTRY", {}))
+        _PROFILE = getattr(_local, "AWS_PROFILE", _PROFILE)
+    except ImportError:
+        pass
 
 _clients = {}
 def _client(region):
@@ -112,6 +156,18 @@ def complete_text(sp, up, model_id=None, seed=None):
     for b in content:
         if isinstance(b, dict) and "text" in b: return b["text"]
     return ""
+
+def converse_messages(sp, messages, tool_config=None, model_id=None):
+    """Multi-turn converse() with optional tools; returns the assistant message dict.
+
+    Used by the end-to-end experiments, where untrusted content must arrive in a real
+    toolResult block rather than as text in the user turn."""
+    arn, region, _, supports_temp = _resolve(model_id or AGENT_MODEL)
+    kwargs = dict(modelId=arn, system=[{"text": sp}], messages=messages,
+                  inferenceConfig=_cfg(supports_temp))
+    if tool_config:
+        kwargs["toolConfig"] = tool_config
+    return _converse(region, **kwargs)["output"]["message"]
 
 def _inline_refs(sch):
     """Recursively resolve JSON-schema $ref pointers into their $defs targets and strip $defs.
